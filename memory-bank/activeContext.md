@@ -1,16 +1,20 @@
 # Active Context
 
 ## Current Work Focus
-- Initializing the project structure based on the provided specifications (`screen-translator-spec.md`).
-- Creating the architectural plan and implementation strategy.
+- MVP Core successfully built and integrated.
+- Evaluating Phase 6 (Future Enhancements) involving Python OCR Sidecars (PaddleOCR/EasyOCR).
 
 ## Recent Changes
-- Memory bank has been successfully created based on the initial project spec.
-- Project initialized using `create-tauri-app` with Svelte template.
+- Implemented Phase 5: Local Web UI & Startup System.
+- Created `web-ui/index.html` with a glassmorphism theme and auto-reconnecting WebSocket client.
+- Modified `lib.rs` to start the Axum Web Server and `tokio` broadcaster loop on application startup.
+- Hooked the SQLite database initialization to application setup (`db::init_db`).
+- Wrote Tauri commands `capture_and_translate`, `get_history`, and `save_settings` connecting the Rust backend to Svelte UI.
+- Validated build success via `cargo check`.
 
 ## Next Steps
-- Create an implementation plan to bootstrap the Tauri project, configure the Rust backend, and set up the Svelte/SolidJS frontend.
-- Present the implementation plan to the user for approval.
+- Consider packaging the application or implementing Phase 6 features (Python-based OCR engine sidecars).
+- Ensure Python venv and uv tools are managed if Sidecars are adopted.
 
 ## Active Decisions and Considerations
 - **Frontend Framework**: Svelte has been selected based on the user's approval.
@@ -22,3 +26,4 @@
 - Decouple the translation engine and OCR engine using trait abstractions (`ocr.rs`, `translate.rs`).
 - Event-driven communication for translation results (`broadcaster.rs`).
 - Emphasize rich aesthetics in UI design.
+- **Added Caveman Skill**: Installed the `JuliusBrussee/caveman` skill for token-efficient communication.

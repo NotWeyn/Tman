@@ -4,27 +4,27 @@
 - Specifications are clearly defined.
 - Memory bank is established.
 - Tauri + Svelte project has been initialized.
-
-## What's left to build
-- **Project Scaffold:** Initialize Tauri v2 project.
-- **Backend (Rust):**
-  - Capture module (`grim`/`slurp`)
-  - Image preprocessing
-  - OCR abstraction & integration
-  - Translation abstraction & API integration
-  - SQLite Database integration for history
+- **Core Engine (Rust Backend) implemented:**
+  - `capture.rs` (using `grim`/`slurp` and image preprocessing)
+  - `ocr.rs` (using `leptess`)
+  - `translate.rs` (OpenAI integration)
+  - `db.rs` (SQLite history using `sqlx`)
+- **Event Bus & Server implemented:**
   - Axum Web server & WebSocket broadcaster
-- **Frontend (Tauri UI):**
-  - Settings UI (API keys, OCR selection, Capture mode)
-  - History View
-  - QR Code display
-- **Web UI:**
-  - Simple HTML/JS client to connect to WebSocket and display text.
+  - QR Code generator
+- **Frontend (Tauri UI) implemented:**
+  - Global CSS structure & responsive layout
+  - Themed routes: Capture (Purple), Settings (Blue), History (Red)
+
+- **Web UI & Startup System implemented:**
+  - Responsive, mobile-first `index.html` built for remote viewing.
+  - WebSocket client connects and displays real-time translations via `broadcaster`.
+  - Tauri `lib.rs` configured to run Axum background server on startup.
 - **Sidecars:**
   - Python scripts/binaries for PaddleOCR/EasyOCR (if chosen).
 
 ## Current Status
-- Execution Phase. The implementation plan has been approved by the user. Initializing project structure and starting Phase 1.
+- MVP Phase (Phases 1-5) is fully integrated and compiles successfully. Moving to Phase 6 (Future Enhancements).
 
 ## Known Issues
 - None yet.
