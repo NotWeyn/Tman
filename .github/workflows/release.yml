@@ -1,25 +1,43 @@
-name: Build
+name: Release
+
 on:
   push:
     tags:
       - 'v*'
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  build-linux:
+    name: Build (Linux)
+    runs-on: ubuntu-22.04
+
+    permissions:
+      contents: write
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Install Rust
+      - name: Install Rust (stable)
         uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
 
       - name: Install Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: 'npm'
 
-      - name: Install Linux dependencies
+      - name: Install Linux system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -32,11 +50,30 @@ jobs:
             libsoup-3.0-dev \
             libjavascriptcoregtk-4.1-dev
 
-      - name: Install dependencies
+      - name: Install Node dependencies
         run: npm ci
 
-      - name: Build
+      - name: Build Tauri app
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-        run: cargo tauri build
+        run: npm run tauri build
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-build
+          path: |
+            src-tauri/target/release/bundle/deb/*.deb
+            src-tauri/target/release/bundle/rpm/*.rpm
+            src-tauri/target/release/bundle/appimage/*.AppImage
+          if-no-files-found: warn
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            src-tauri/target/release/bundle/deb/*.deb
+            src-tauri/target/release/bundle/rpm/*.rpm
+            src-tauri/target/release/bundle/appimage/*.AppImage
+          generate_release_notes: true
