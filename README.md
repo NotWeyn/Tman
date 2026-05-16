@@ -29,7 +29,7 @@ Projeyi yerelinizde çalıştırmak için:
 
 2. Geliştirme modunu başlatın:
    ```bash
-   npm run tauri dev
+   npm run tauri build
    ```
 
 ## Katkıda Bulunma 🤝
