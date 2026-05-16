@@ -48,7 +48,10 @@ jobs:
             libglib2.0-dev \
             libgtk-3-dev \
             libsoup-3.0-dev \
-            libjavascriptcoregtk-4.1-dev
+            libjavascriptcoregtk-4.1-dev \
+            libleptonica-dev \
+            libtesseract-dev \
+            clang
 
       - name: Install Node dependencies
         run: npm ci
