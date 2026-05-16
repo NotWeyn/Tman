@@ -11,6 +11,7 @@
 - Hooked the SQLite database initialization to application setup (`db::init_db`).
 - Wrote Tauri commands `capture_and_translate`, `get_history`, and `save_settings` connecting the Rust backend to Svelte UI.
 - Validated build success via `cargo check`.
+- Created project documentation: `README.md`, `CONTRIBUTING.md`, `LICENSE`, and updated `.gitignore`.
 
 ## Next Steps
 - Consider packaging the application or implementing Phase 6 features (Python-based OCR engine sidecars).

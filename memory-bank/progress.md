@@ -15,6 +15,11 @@
 - **Frontend (Tauri UI) implemented:**
   - Global CSS structure & responsive layout
   - Themed routes: Capture (Purple), Settings (Blue), History (Red)
+- **Documentation & Repo Setup:**
+  - `README.md` (Project overview & guide)
+  - `CONTRIBUTING.md` (Contribution guidelines)
+  - `LICENSE` (MIT License)
+  - `.gitignore` (Optimized for Tauri/Node/Python)
 
 - **Web UI & Startup System implemented:**
   - Responsive, mobile-first `index.html` built for remote viewing.
