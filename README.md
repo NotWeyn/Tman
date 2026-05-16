@@ -27,7 +27,7 @@ Projeyi yerelinizde çalıştırmak için:
    npm install
    ```
 
-2. Geliştirme modunu başlatın:
+2. Projeyi başlatın:
    ```bash
    npm run tauri build
    ```
