@@ -32,12 +32,10 @@
   let captureMode = 'manuel'; // manuel, interval, degisim
   let intervalSeconds = 3;
   let changeThreshold = 15;
-  let regionMemory = false;
   let grayscale = false;
   let binarization = false;
   let contrast = 'kapali';
   let scale = '2x';
-  let copyToClipboard = true;
   let showInGui = false;
 
   // 2. OCR
@@ -93,7 +91,6 @@
       captureMode = config.capture_mode;
       intervalSeconds = config.capture_interval_sec;
       changeThreshold = config.capture_change_threshold;
-      regionMemory = config.capture_region_memory;
       lastRegion = config.capture_last_region;
       grayscale = config.pre_grayscale;
       binarization = config.pre_binarize;
@@ -168,7 +165,6 @@
           capture_mode: captureMode,
           capture_interval_sec: parseInt(intervalSeconds),
           capture_change_threshold: parseInt(changeThreshold),
-          capture_region_memory: regionMemory,
           capture_last_region: lastRegion,
           
           pre_grayscale: grayscale,
@@ -212,7 +208,7 @@
 
   $: {
     let _deps = [
-      captureMode, intervalSeconds, changeThreshold, regionMemory, lastRegion,
+      captureMode, intervalSeconds, changeThreshold, lastRegion,
       grayscale, binarization, contrast, scale,
       ocrEngine, paddlePath, easyPath, useGpu, sourceLang, autoDetectLang, mergeLines, mergeParagraphs, minCharThreshold,
       activeProvider, targetLang, cacheTranslations, openaiEndpoint, openaiModel, libreUrl, openaiKey, deeplKey, googleKey,
@@ -294,15 +290,25 @@
   let captureIntervalId = null;
   let isCapturingLoop = false;
 
-  async function captureScreen() {
-    console.log("Ekran yakalama tetiklendi");
+  async function pickRegion() {
+    try {
+      const region = await invoke('pick_region');
+      lastRegion = region;
+    } catch (e) {
+      console.error("Bölge seçme hatası:", e);
+      alert("Bölge seçimi iptal edildi veya hata oluştu.");
+    }
+  }
+
+  async function toggleCaptureLoop() {
+    console.log("Çeviri döngüsü tetiklendi");
     
     if (captureMode === 'manuel') {
       try {
         await invoke('capture_and_translate');
       } catch (e) {
         if (e !== "No significant change") {
-          console.error("Yakalama hatası:", e);
+          console.error("Çeviri hatası:", e);
           alert("Hata: " + e);
         }
       }
@@ -352,8 +358,15 @@
 
 <div class="layout">
   <aside class="sidebar">
-    <div class="sidebar-header">
-      <span class="title">AYARLAR</span>
+    <div class="sidebar-header" style="flex-direction: column; gap: 10px; align-items: stretch;">
+      <span class="title text-center">AYARLAR</span>
+      <button class="btn {captureMode === 'manuel' ? 'btn-primary' : (isCapturingLoop ? 'btn-danger' : 'btn-success')} w-100" on:click={toggleCaptureLoop}>
+        {#if captureMode === 'manuel'}
+          Çevir
+        {:else}
+          {isCapturingLoop ? 'Durdur' : 'Başlat'}
+        {/if}
+      </button>
     </div>
     <nav class="nav-menu">
       {#each tabs as tab}
@@ -374,16 +387,14 @@
       {#if activeTab === 'yakalama'}
         <div class="tab-content">
           <div class="action-header">
-            <button class="btn {isCapturingLoop ? 'btn-danger' : 'btn-primary'} btn-large w-100" on:click={captureScreen}>
+            <button class="btn btn-primary btn-large w-100" on:click={pickRegion}>
               {@html icons.camera}
-              {isCapturingLoop ? 'Yakalamayı Durdur' : 'Ekranı Yakala'}
+              Ekranı Yakala
             </button>
-            {#if captureMode === 'manuel' || captureMode === 'interval'}
             <div class="row" style="margin-top: 15px; flex-direction: column; align-items: stretch; gap: 5px;">
               <div class="label-desc text-center" style="opacity: 0.8; font-size: 0.85em;">Son yakalanan bölge koordinatları (Düzenleyebilirsiniz)</div>
               <input type="text" class="form-input code-font text-center" bind:value={lastRegion} placeholder="Örn: 1000,300 200x50" />
             </div>
-            {/if}
           </div>
 
           <section class="section">
@@ -425,17 +436,6 @@
                 </div>
               </div>
             {/if}
-
-            <div class="row">
-              <div class="row-info">
-                <label>Bölge hafızası</label>
-                <div class="label-desc">Son seçilen koordinatları kaydeder, tekrar seçmek gerekmez.</div>
-              </div>
-              <label class="toggle-wrapper">
-                <input type="checkbox" bind:checked={regionMemory} class="toggle-input" />
-                <div class="toggle-bg"><div class="toggle-dot"></div></div>
-              </label>
-            </div>
           </section>
 
           <section class="section">
@@ -489,15 +489,6 @@
 
           <section class="section">
             <h3 class="section-title">ÇIKTI</h3>
-            <div class="row">
-              <div class="row-info">
-                <label>Sonucu panoya kopyala</label>
-              </div>
-              <label class="toggle-wrapper">
-                <input type="checkbox" bind:checked={copyToClipboard} class="toggle-input" />
-                <div class="toggle-bg"><div class="toggle-dot"></div></div>
-              </label>
-            </div>
             <div class="row">
               <div class="row-info">
                 <label>GUI'de göster</label>

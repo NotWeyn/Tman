@@ -14,7 +14,6 @@ pub struct AppConfig {
     pub capture_mode: String,
     pub capture_interval_sec: u32,
     pub capture_change_threshold: u32,
-    pub capture_region_memory: bool,
     pub capture_last_region: String,
 
     pub pre_grayscale: bool,
@@ -59,7 +58,6 @@ impl Default for AppConfig {
             capture_mode: "manual".to_string(),
             capture_interval_sec: 5,
             capture_change_threshold: 5,
-            capture_region_memory: false,
             capture_last_region: "".to_string(),
 
             pre_grayscale: false,

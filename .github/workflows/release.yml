@@ -56,12 +56,21 @@ jobs:
       - name: Install Node dependencies
         run: npm ci
 
-      - name: Build Tauri app
+      - name: Build and publish release
+        uses: tauri-apps/tauri-action@v0
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-        run: npm run tauri build
-
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: Tman ${{ github.ref_name }}
+          releaseBody: |
+            Tman ${{ github.ref_name }} sürümü yayınlandı.
+            Değişiklikler için commit geçmişine bakabilirsiniz.
+          releaseDraft: false
+          prerelease: false
+ 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -69,14 +78,4 @@ jobs:
           path: |
             src-tauri/target/release/bundle/deb/*.deb
             src-tauri/target/release/bundle/rpm/*.rpm
-            src-tauri/target/release/bundle/appimage/*.AppImage
           if-no-files-found: warn
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            src-tauri/target/release/bundle/deb/*.deb
-            src-tauri/target/release/bundle/rpm/*.rpm
-            src-tauri/target/release/bundle/appimage/*.AppImage
-          generate_release_notes: true

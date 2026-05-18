@@ -31,7 +31,7 @@ async fn capture_and_translate(app: tauri::AppHandle, state: State<'_, Arc<AppSt
     let cfg = state.config.lock().await.clone();
     let (original_image, processed_image, region) = capture::capture_region(&cfg)?;
     
-    if cfg.capture_region_memory && cfg.capture_last_region != region {
+    if cfg.capture_last_region != region {
         let mut cfg_mut = state.config.lock().await;
         cfg_mut.capture_last_region = region.clone();
         crate::config::save_config(&cfg_mut);
@@ -95,6 +95,15 @@ async fn capture_and_translate(app: tauri::AppHandle, state: State<'_, Arc<AppSt
     let _ = app.emit("translation-update", tauri_event);
     
     Ok(translated_text)
+}
+
+#[tauri::command]
+async fn pick_region(state: State<'_, Arc<AppState>>) -> Result<String, String> {
+    let region = capture::pick_region()?;
+    let mut cfg = state.config.lock().await;
+    cfg.capture_last_region = region.clone();
+    crate::config::save_config(&cfg);
+    Ok(region)
 }
 
 #[tauri::command]
@@ -285,7 +294,7 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            capture_and_translate, get_history, clear_history, save_settings, 
+            capture_and_translate, pick_region, get_history, clear_history, save_settings, 
             get_config, save_config, get_secret, set_secret, get_server_info, toggle_server,
             get_config_path, set_config_path
         ])

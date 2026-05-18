@@ -2,10 +2,22 @@ use crate::config::AppConfig;
 use std::process::Command;
 use image::{DynamicImage, ImageFormat};
 
+pub fn pick_region() -> Result<String, String> {
+    let slurp_output = Command::new("slurp")
+        .output()
+        .map_err(|e| format!("Failed to run slurp: {}", e))?;
+
+    if !slurp_output.status.success() {
+        return Err("Slurp was cancelled or failed".to_string());
+    }
+
+    Ok(String::from_utf8_lossy(&slurp_output.stdout).trim().to_string())
+}
+
 pub fn capture_region(cfg: &AppConfig) -> Result<(DynamicImage, DynamicImage, String), String> {
     let mut region = cfg.capture_last_region.clone();
 
-    if !cfg.capture_region_memory || region.is_empty() {
+    if region.is_empty() {
         let slurp_output = Command::new("slurp")
             .output()
             .map_err(|e| format!("Failed to run slurp: {}", e))?;

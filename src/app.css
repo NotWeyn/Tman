@@ -191,6 +191,17 @@ label {
   background: rgba(239, 68, 68, 0.1);
 }
 
+.btn-success {
+  background: var(--success-color);
+  border-color: var(--success-color);
+  color: white;
+}
+
+.btn-success:hover {
+  background: #059669; /* darker emerald */
+  border-color: #059669;
+}
+
 /* Custom Toggle */
 .toggle-wrapper {
   display: inline-flex;
