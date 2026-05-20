@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Screen Translator Remote</title>
+    <title>Tman Remote</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
     <style>
         :root {
@@ -19,79 +19,58 @@
             --glass-blur: blur(20px);
             --sidebar-width: 280px;
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --font-size-translation: 1.75rem;
+            --font-size-original: 1.1rem;
+            --font-size-history-translation: 1.2rem;
+            --font-size-history-original: 0.9rem;
+            --panel-padding: 2rem;
+            --panel-radius: 24px;
         }
 
         * { box-sizing: border-box; }
 
         body {
-            margin: 0;
-            padding: 0;
-            min-height: 100vh;
+            margin: 0; padding: 0; min-height: 100vh;
             font-family: 'Inter', sans-serif;
             color: var(--text-color);
             background: radial-gradient(circle at top left, var(--theme-gradient-start), var(--theme-gradient-end));
             background-attachment: fixed;
-            display: flex;
-            overflow: hidden;
+            display: flex; overflow: hidden;
         }
 
         /* --- Sidebar --- */
         #sidebar {
-            width: var(--sidebar-width);
-            height: 100vh;
+            width: var(--sidebar-width); height: 100vh;
             background: rgba(15, 23, 42, 0.8);
             backdrop-filter: var(--glass-blur);
             border-right: 1px solid var(--glass-border);
-            display: flex;
-            flex-direction: column;
-            transition: var(--transition);
-            z-index: 100;
+            display: flex; flex-direction: column;
+            transition: var(--transition); z-index: 100;
             position: absolute;
             left: calc(-1 * var(--sidebar-width));
         }
-
-        #sidebar.open {
-            left: 0;
-        }
+        #sidebar.open { left: 0; }
 
         .sidebar-header {
             padding: 2rem 1.5rem;
             border-bottom: 1px solid var(--glass-border);
         }
-
         .sidebar-header h2 {
-            margin: 0;
-            font-size: 1.2rem;
+            margin: 0; font-size: 1.2rem;
             background: linear-gradient(to right, #fff, var(--accent-purple));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
 
-        .nav-list {
-            list-style: none;
-            padding: 1rem;
-            margin: 0;
-            flex: 1;
-        }
+        .nav-list { list-style: none; padding: 1rem; margin: 0; flex: 1; }
 
         .nav-item {
-            padding: 1rem 1.5rem;
-            margin-bottom: 0.5rem;
-            border-radius: 12px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            transition: var(--transition);
-            font-weight: 500;
+            padding: 1rem 1.5rem; margin-bottom: 0.5rem;
+            border-radius: 12px; cursor: pointer;
+            display: flex; align-items: center; gap: 1rem;
+            transition: var(--transition); font-weight: 500;
             color: rgba(255, 255, 255, 0.7);
         }
-
-        .nav-item:hover {
-            background: var(--glass-bg);
-            color: #fff;
-        }
-
+        .nav-item:hover { background: var(--glass-bg); color: #fff; }
         .nav-item.active {
             background: rgba(167, 139, 250, 0.15);
             color: var(--accent-purple);
@@ -100,19 +79,14 @@
 
         /* --- Main Content --- */
         #content-wrapper {
-            flex: 1;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            transition: var(--transition);
-            width: 100%;
+            flex: 1; height: 100vh;
+            display: flex; flex-direction: column;
+            transition: var(--transition); width: 100%;
         }
 
         header {
-            padding: 1rem 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
+            padding: 1rem 1.5rem; display: flex;
+            align-items: center; gap: 1rem;
             background: rgba(15, 23, 42, 0.4);
             backdrop-filter: var(--glass-blur);
             border-bottom: 1px solid var(--glass-border);
@@ -120,34 +94,19 @@
         }
 
         .menu-btn {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            color: white;
-            padding: 0.6rem;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: var(--transition);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            background: var(--glass-bg); border: 1px solid var(--glass-border);
+            color: white; padding: 0.6rem; border-radius: 10px;
+            cursor: pointer; transition: var(--transition);
+            display: flex; align-items: center; justify-content: center;
         }
-
         .menu-btn:hover { background: rgba(255, 255, 255, 0.1); }
 
-        .view-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            flex: 1;
-        }
+        .view-title { font-size: 1.1rem; font-weight: 600; flex: 1; }
 
         .status-badge {
-            font-size: 0.75rem;
-            padding: 0.4rem 0.8rem;
-            border-radius: 20px;
-            background: rgba(0, 0, 0, 0.3);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+            font-size: 0.75rem; padding: 0.4rem 0.8rem;
+            border-radius: 20px; background: rgba(0, 0, 0, 0.3);
+            display: flex; align-items: center; gap: 0.5rem;
             border: 1px solid var(--glass-border);
         }
 
@@ -155,19 +114,14 @@
         .dot.online { background: #10b981; box-shadow: 0 0 10px #10b981; }
 
         main {
-            flex: 1;
-            padding: 1.5rem;
-            overflow-y: auto;
-            position: relative;
+            flex: 1; padding: 1.5rem;
+            overflow-y: auto; position: relative;
         }
 
         .view-section {
-            display: none;
-            animation: fadeIn 0.3s ease-out;
-            max-width: 1000px;
-            margin: 0 auto;
+            display: none; animation: fadeIn 0.3s ease-out;
+            max-width: 1000px; margin: 0 auto;
         }
-
         .view-section.active { display: block; }
 
         @keyframes fadeIn {
@@ -177,117 +131,174 @@
 
         /* --- Cards & Panels --- */
         .glass-panel {
-            background: var(--glass-bg);
-            backdrop-filter: var(--glass-blur);
-            border: 1px solid var(--glass-border);
-            box-shadow: var(--glass-shadow);
-            border-radius: 24px;
-            padding: 2rem;
-            margin-bottom: 1.5rem;
+            background: var(--glass-bg); backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border); box-shadow: var(--glass-shadow);
+            border-radius: 24px; padding: 2rem; margin-bottom: 1.5rem;
         }
 
         .label {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: var(--accent-purple);
-            margin-bottom: 0.75rem;
-            font-weight: 700;
+            font-size: 0.75rem; text-transform: uppercase;
+            letter-spacing: 0.1em; color: var(--accent-purple);
+            margin-bottom: 0.75rem; font-weight: 700;
         }
 
         .translation-text {
-            font-size: 1.75rem;
-            font-weight: 600;
-            line-height: 1.3;
-            margin-bottom: 1.5rem;
+            font-size: var(--font-size-translation);
+            font-weight: 600; line-height: 1.3; margin-bottom: 1.5rem;
         }
 
         .original-text {
-            font-size: 1.1rem;
-            opacity: 0.7;
-            border-left: 3px solid var(--glass-border);
-            padding-left: 1rem;
-            margin-bottom: 2rem;
+            font-size: var(--font-size-original);
+            opacity: 0.7; border-left: 3px solid var(--glass-border);
+            padding-left: 1rem; margin-bottom: 2rem;
         }
 
         /* --- Image Comparison Grid --- */
         .image-comparison {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-            margin-top: 1rem;
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 1rem; margin-top: 1rem;
         }
-
-        .image-box {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
+        .image-box { display: flex; flex-direction: column; gap: 0.5rem; }
         .image-box img {
-            width: 100%;
-            border-radius: 12px;
+            width: 100%; border-radius: 12px;
             border: 1px solid var(--glass-border);
-            background: rgba(0, 0, 0, 0.2);
-            object-fit: contain;
-            max-height: 300px;
+            background: rgba(0, 0, 0, 0.2); object-fit: contain; max-height: 300px;
         }
-
-        .image-label {
-            font-size: 0.7rem;
-            text-align: center;
-            opacity: 0.5;
-        }
+        .image-label { font-size: 0.7rem; text-align: center; opacity: 0.5; }
 
         /* --- History List --- */
         .history-card {
-            background: rgba(0, 0, 0, 0.2);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            padding: 1.5rem;
-            margin-bottom: 1rem;
+            background: rgba(0, 0, 0, 0.2); border: 1px solid var(--glass-border);
+            border-radius: 20px; padding: 1.5rem; margin-bottom: 1rem;
             transition: var(--transition);
         }
-
-        .history-card:hover {
-            background: rgba(255, 255, 255, 0.03);
-            transform: scale(1.01);
-        }
+        .history-card:hover { background: rgba(255, 255, 255, 0.03); transform: scale(1.01); }
 
         .history-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
+            display: flex; justify-content: space-between;
+            align-items: center; margin-bottom: 1rem;
+        }
+        .history-lang { font-size: 0.7rem; opacity: 0.5; }
+
+        .empty-state { text-align: center; padding: 4rem 2rem; opacity: 0.4; }
+
+        /* --- Settings --- */
+        .settings-group {
+            margin-bottom: 1.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+        .settings-group:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+
+        .settings-group h3 {
+            margin: 0 0 1rem 0; font-size: 0.85rem;
+            text-transform: uppercase; letter-spacing: 0.08em;
+            color: var(--accent-purple); font-weight: 700;
         }
 
-        .history-lang {
-            font-size: 0.7rem;
-            opacity: 0.5;
+        .setting-row {
+            display: flex; justify-content: space-between;
+            align-items: center; padding: 0.75rem 0;
+        }
+        .setting-label { font-size: 0.9rem; font-weight: 500; }
+        .setting-desc { font-size: 0.75rem; opacity: 0.5; margin-top: 0.2rem; }
+        .setting-value {
+            font-size: 0.85rem; color: var(--accent-purple);
+            font-weight: 600; min-width: 40px; text-align: right;
         }
 
-        .empty-state {
-            text-align: center;
-            padding: 4rem 2rem;
-            opacity: 0.4;
+        input[type="range"] {
+            -webkit-appearance: none; appearance: none;
+            width: 120px; height: 6px; border-radius: 3px;
+            background: rgba(255,255,255,0.15); outline: none;
+            cursor: pointer;
         }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none;
+            width: 18px; height: 18px; border-radius: 50%;
+            background: var(--accent-purple); cursor: pointer;
+            box-shadow: 0 0 8px rgba(167, 139, 250, 0.5);
+        }
+
+        input[type="number"].setting-input {
+            width: 70px; padding: 0.4rem 0.6rem;
+            background: rgba(255,255,255,0.08); border: 1px solid var(--glass-border);
+            border-radius: 8px; color: var(--text-color);
+            font-size: 0.85rem; text-align: center; outline: none;
+        }
+        input[type="number"].setting-input:focus {
+            border-color: var(--accent-purple);
+        }
+
+        /* Toggle Switch */
+        .toggle {
+            position: relative; width: 44px; height: 24px;
+            cursor: pointer; display: inline-block;
+        }
+        .toggle input { display: none; }
+        .toggle-track {
+            position: absolute; inset: 0;
+            background: rgba(255,255,255,0.12); border-radius: 12px;
+            transition: var(--transition);
+        }
+        .toggle input:checked + .toggle-track { background: var(--accent-purple); }
+        .toggle-knob {
+            position: absolute; top: 3px; left: 3px;
+            width: 18px; height: 18px; border-radius: 50%;
+            background: white; transition: var(--transition);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+        .toggle input:checked ~ .toggle-knob { left: 23px; }
+
+        .btn-reset {
+            padding: 0.5rem 1rem; border: 1px solid rgba(239, 68, 68, 0.4);
+            background: rgba(239, 68, 68, 0.1); color: #f87171;
+            border-radius: 10px; cursor: pointer; font-size: 0.8rem;
+            font-weight: 600; transition: var(--transition);
+        }
+        .btn-reset:hover { background: rgba(239, 68, 68, 0.25); }
 
         /* Overlay for sidebar */
         #overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 90;
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.5); z-index: 90;
         }
         #overlay.active { display: block; }
 
+        /* Hide images in compact mode */
+        body.compact-mode .image-comparison,
+        body.compact-mode .debug-images { display: none !important; }
+
+        /* Hide original text when showOriginal is false */
+        body.hide-original .original-text-section,
+        body.hide-original .history-original { display: none !important; }
+
         @media (max-width: 600px) {
             .image-comparison { grid-template-columns: 1fr; }
-            .translation-text { font-size: 1.4rem; }
+            main { padding: 1rem; }
+            .glass-panel { padding: 1.25rem; border-radius: 18px; }
+            .setting-row { flex-wrap: wrap; gap: 0.5rem; }
+        }
+
+        /* Landscape: minimal header — only hamburger visible */
+        @media (orientation: landscape) and (max-height: 500px) {
+            header {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: auto;
+                background: transparent;
+                border-bottom: none;
+                backdrop-filter: none;
+                padding: 0.5rem;
+                z-index: 60;
+            }
+            .view-title,
+            .status-badge { display: none; }
+            main { padding: 0.75rem; padding-top: 3.5rem; }
+            .glass-panel { padding: 1rem; border-radius: 14px; margin-bottom: 0.75rem; }
+            .translation-text { margin-bottom: 0.75rem; }
+            .original-text { margin-bottom: 1rem; }
         }
     </style>
 </head>
@@ -298,16 +309,20 @@
         </div>
         <ul class="nav-list">
             <li class="nav-item active" onclick="switchView('translator', this)">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8l6 6 6-6"/></svg>
-                Screen Translator
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 8 6 6M4 14l6-6 2-3M2 5h12M7 2h1M22 22l-5-10-5 10M14 18h6"/></svg>
+                Translator
             </li>
             <li class="nav-item" onclick="switchView('history', this)">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 History
             </li>
+            <li class="nav-item" onclick="switchView('settings', this)">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                Settings
+            </li>
         </ul>
         <div style="padding: 1.5rem; font-size: 0.7rem; opacity: 0.3; text-align: center;">
-            v1.0.0 Dev Tools Active
+            v1.0.0
         </div>
     </div>
 
@@ -316,9 +331,9 @@
     <div id="content-wrapper">
         <header>
             <button class="menu-btn" onclick="toggleSidebar()">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
             </button>
-            <div class="view-title" id="current-view-title">Screen Translator</div>
+            <div class="view-title" id="current-view-title">Translator</div>
             <div class="status-badge">
                 <div class="dot" id="status-dot"></div>
                 <span id="status-text">Offline</span>
@@ -326,32 +341,31 @@
         </header>
 
         <main>
-            <!-- Screen Translator View -->
+            <!-- Translator View -->
             <div id="view-translator" class="view-section active">
                 <div id="latest-content">
-                    <!-- Initial State -->
                     <div class="empty-state" id="translator-empty">
                         <div style="font-size: 3rem; margin-bottom: 1rem;">📸</div>
                         Waiting for a capture...
                     </div>
-                    
-                    <!-- Content Card (hidden initially) -->
                     <div id="main-card" class="glass-panel" style="display: none;">
                         <div class="label">Translation (<span id="target-lang-label"></span>)</div>
                         <div class="translation-text" id="main-translated"></div>
-                        
-                        <div class="label">Original (<span id="source-lang-label"></span>)</div>
-                        <div class="original-text" id="main-original"></div>
-
-                        <div class="label">Dev Debug: Image Comparison</div>
-                        <div class="image-comparison">
-                            <div class="image-box">
-                                <img id="img-captured" src="" alt="Captured">
-                                <div class="image-label">Raw Capture</div>
-                            </div>
-                            <div class="image-box">
-                                <img id="img-processed" src="" alt="Processed">
-                                <div class="image-label">Pre-processed (OCR Input)</div>
+                        <div class="original-text-section">
+                            <div class="label">Original (<span id="source-lang-label"></span>)</div>
+                            <div class="original-text" id="main-original"></div>
+                        </div>
+                        <div class="debug-images">
+                            <div class="label">Debug: Image Comparison</div>
+                            <div class="image-comparison">
+                                <div class="image-box">
+                                    <img id="img-captured" src="" alt="Captured">
+                                    <div class="image-label">Raw Capture</div>
+                                </div>
+                                <div class="image-box">
+                                    <img id="img-processed" src="" alt="Processed">
+                                    <div class="image-label">Pre-processed (OCR Input)</div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -364,6 +378,90 @@
                     <div class="empty-state">No history recorded yet.</div>
                 </div>
             </div>
+
+            <!-- Settings View -->
+            <div id="view-settings" class="view-section">
+                <div class="glass-panel">
+                    <div class="settings-group">
+                        <h3>Display</h3>
+                        <div class="setting-row">
+                            <div>
+                                <div class="setting-label">Translation Font Size</div>
+                                <div class="setting-desc">Adjust translated text size</div>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:0.75rem;">
+                                <input type="range" id="set-font-translation" min="12" max="48" value="28" oninput="updateSetting('fontTranslation', this.value)">
+                                <span class="setting-value" id="val-font-translation">28px</span>
+                            </div>
+                        </div>
+                        <div class="setting-row">
+                            <div>
+                                <div class="setting-label">Original Font Size</div>
+                                <div class="setting-desc">Adjust original text size</div>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:0.75rem;">
+                                <input type="range" id="set-font-original" min="10" max="36" value="18" oninput="updateSetting('fontOriginal', this.value)">
+                                <span class="setting-value" id="val-font-original">18px</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-group">
+                        <h3>Behavior</h3>
+                        <div class="setting-row">
+                            <div>
+                                <div class="setting-label">Compact Mode</div>
+                                <div class="setting-desc">Hide debug images — saves space on mobile</div>
+                            </div>
+                            <label class="toggle">
+                                <input type="checkbox" id="set-compact" onchange="updateSetting('compact', this.checked)">
+                                <div class="toggle-track"></div>
+                                <div class="toggle-knob"></div>
+                            </label>
+                        </div>
+                        <div class="setting-row">
+                            <div>
+                                <div class="setting-label">Show Original Text</div>
+                                <div class="setting-desc">Display original text below translation</div>
+                            </div>
+                            <label class="toggle">
+                                <input type="checkbox" id="set-show-original" checked onchange="updateSetting('showOriginal', this.checked)">
+                                <div class="toggle-track"></div>
+                                <div class="toggle-knob"></div>
+                            </label>
+                        </div>
+                        <div class="setting-row">
+                            <div>
+                                <div class="setting-label">Auto-Scroll</div>
+                                <div class="setting-desc">Scroll to top on new translation</div>
+                            </div>
+                            <label class="toggle">
+                                <input type="checkbox" id="set-autoscroll" checked onchange="updateSetting('autoScroll', this.checked)">
+                                <div class="toggle-track"></div>
+                                <div class="toggle-knob"></div>
+                            </label>
+                        </div>
+                        <div class="setting-row">
+                            <div>
+                                <div class="setting-label">Max History</div>
+                                <div class="setting-desc">Number of entries kept in session</div>
+                            </div>
+                            <input type="number" class="setting-input" id="set-max-history" min="5" max="500" value="50" onchange="updateSetting('maxHistory', this.value)">
+                        </div>
+                    </div>
+
+                    <div class="settings-group">
+                        <h3>Danger Zone</h3>
+                        <div class="setting-row">
+                            <div>
+                                <div class="setting-label">Reset All Settings</div>
+                                <div class="setting-desc">Restore defaults and clear session history</div>
+                            </div>
+                            <button class="btn-reset" onclick="resetSettings()">Reset</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
 
@@ -373,100 +471,159 @@
         const statusDot = document.getElementById('status-dot');
         const statusText = document.getElementById('status-text');
         const viewTitle = document.getElementById('current-view-title');
-        
+
         let historyData = [];
 
+        // --- Settings with localStorage persistence ---
+        const DEFAULTS = {
+            fontTranslation: 28,
+            fontOriginal: 18,
+            compact: true,
+            autoScroll: true,
+            maxHistory: 50,
+            showOriginal: true
+        };
+
+        function loadSettings() {
+            let s;
+            try { s = JSON.parse(localStorage.getItem('tman_remote_settings')); } catch(_) {}
+            return Object.assign({}, DEFAULTS, s || {});
+        }
+
+        function saveSettings(s) {
+            localStorage.setItem('tman_remote_settings', JSON.stringify(s));
+        }
+
+        let settings = loadSettings();
+
+        function applySettings() {
+            // Font sizes — history scales proportionally
+            document.documentElement.style.setProperty('--font-size-translation', settings.fontTranslation + 'px');
+            document.documentElement.style.setProperty('--font-size-original', settings.fontOriginal + 'px');
+            document.documentElement.style.setProperty('--font-size-history-translation', Math.round(settings.fontTranslation * 0.65) + 'px');
+            document.documentElement.style.setProperty('--font-size-history-original', Math.round(settings.fontOriginal * 0.8) + 'px');
+
+            // Compact & Original modes
+            document.body.classList.toggle('compact-mode', !!settings.compact);
+            document.body.classList.toggle('hide-original', !settings.showOriginal);
+
+            // Sync UI controls
+            document.getElementById('set-font-translation').value = settings.fontTranslation;
+            document.getElementById('val-font-translation').textContent = settings.fontTranslation + 'px';
+            document.getElementById('set-font-original').value = settings.fontOriginal;
+            document.getElementById('val-font-original').textContent = settings.fontOriginal + 'px';
+            document.getElementById('set-compact').checked = settings.compact;
+            document.getElementById('set-show-original').checked = settings.showOriginal;
+            document.getElementById('set-autoscroll').checked = settings.autoScroll;
+            document.getElementById('set-max-history').value = settings.maxHistory;
+        }
+
+        function updateSetting(key, value) {
+            if (key === 'fontTranslation' || key === 'fontOriginal') value = Number(value);
+            if (key === 'maxHistory') value = Math.max(5, Math.min(500, Number(value)));
+            settings[key] = value;
+            saveSettings(settings);
+            applySettings();
+            // Trim history if needed
+            if (key === 'maxHistory' && historyData.length > settings.maxHistory) {
+                historyData = historyData.slice(0, settings.maxHistory);
+                renderHistory();
+            }
+        }
+
+        function resetSettings() {
+            if (!confirm('Reset all settings and clear session history?')) return;
+            settings = Object.assign({}, DEFAULTS);
+            saveSettings(settings);
+            historyData = [];
+            renderHistory();
+            applySettings();
+        }
+
+        // --- Navigation ---
         function toggleSidebar() {
             sidebar.classList.toggle('open');
             overlay.classList.toggle('active');
         }
 
         function switchView(viewId, el) {
-            // Update UI
             document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
             document.getElementById('view-' + viewId).classList.add('active');
-            
             document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
             el.classList.add('active');
-            
             viewTitle.innerText = el.innerText.trim();
-            
             if (window.innerWidth < 800) toggleSidebar();
         }
 
+        // --- WebSocket ---
         function connect() {
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const host = window.location.host;
-            const wsUrl = `${protocol}//${host}/ws`;
-            
+            const wsUrl = `${protocol}//${window.location.host}/ws`;
             const ws = new WebSocket(wsUrl);
 
             ws.onopen = () => {
                 statusDot.classList.add('online');
                 statusText.innerText = 'Online';
             };
-
             ws.onclose = () => {
                 statusDot.classList.remove('online');
                 statusText.innerText = 'Offline';
                 setTimeout(connect, 3000);
             };
-
             ws.onmessage = (event) => {
-                try {
-                    const data = JSON.parse(event.data);
-                    handleNewTranslation(data);
-                } catch (e) { console.error(e); }
+                try { handleNewTranslation(JSON.parse(event.data)); } catch(e) { console.error(e); }
             };
         }
 
         function handleNewTranslation(data) {
-            // Update Main Card
             document.getElementById('translator-empty').style.display = 'none';
             document.getElementById('main-card').style.display = 'block';
-            
+
             document.getElementById('main-translated').innerText = data.translated_text;
             document.getElementById('main-original').innerText = data.original_text;
             document.getElementById('target-lang-label').innerText = data.target_lang;
             document.getElementById('source-lang-label').innerText = data.source_lang;
-            
+
             if (data.captured_image) document.getElementById('img-captured').src = data.captured_image;
             if (data.processed_image) document.getElementById('img-processed').src = data.processed_image;
 
-            // Add to History
-            historyData.unshift({
-                ...data,
-                timestamp: new Date().toLocaleTimeString()
-            });
-            if (historyData.length > 50) historyData.pop();
+            // History
+            historyData.unshift({ ...data, timestamp: new Date().toLocaleTimeString() });
+            if (historyData.length > settings.maxHistory) historyData.pop();
             renderHistory();
+
+            // Auto-scroll
+            if (settings.autoScroll) {
+                document.querySelector('main').scrollTo({ top: 0, behavior: 'smooth' });
+            }
         }
 
         function renderHistory() {
             const container = document.getElementById('history-list');
-            if (historyData.length === 0) return;
-
-            container.innerHTML = historyData.map((item, index) => `
+            if (historyData.length === 0) {
+                container.innerHTML = '<div class="empty-state">No history recorded yet.</div>';
+                return;
+            }
+            const compact = settings.compact;
+            container.innerHTML = historyData.map(item => `
                 <div class="history-card">
                     <div class="history-header">
                         <div class="history-lang">${item.source_lang} → ${item.target_lang}</div>
                         <div class="history-lang">${item.timestamp}</div>
                     </div>
-                    <div style="font-size: 1.2rem; font-weight: 500; margin-bottom: 0.5rem;">${item.translated_text}</div>
-                    <div style="font-size: 0.9rem; opacity: 0.6; margin-bottom: 1rem;">${item.original_text}</div>
-                    
+                    <div style="font-size: var(--font-size-history-translation); font-weight: 500; margin-bottom: 0.5rem;">${item.translated_text}</div>
+                    <div class="history-original" style="font-size: var(--font-size-history-original); opacity: 0.6;">${item.original_text}</div>
+                    ${compact ? '' : `
                     <div class="image-comparison" style="margin-top: 1rem; border-top: 1px solid var(--glass-border); padding-top: 1rem;">
-                        <div class="image-box">
-                            <img src="${item.captured_image || ''}" style="max-height: 150px;">
-                        </div>
-                        <div class="image-box">
-                            <img src="${item.processed_image || ''}" style="max-height: 150px;">
-                        </div>
-                    </div>
+                        <div class="image-box"><img src="${item.captured_image || ''}" style="max-height: 150px;"></div>
+                        <div class="image-box"><img src="${item.processed_image || ''}" style="max-height: 150px;"></div>
+                    </div>`}
                 </div>
             `).join('');
         }
 
+        // --- Init ---
+        applySettings();
         connect();
     </script>
 </body>

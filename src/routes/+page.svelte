@@ -418,18 +418,7 @@
               </div>
             {/if}
 
-            {#if captureMode === 'degisim'}
-              <div class="row sub-row">
-                <div class="row-info">
-                  <label>{$t('capture.threshold')}</label>
-                  <div class="label-desc">{$t('capture.threshold_desc')}</div>
-                </div>
-                <div class="input-with-unit">
-                  <input type="number" bind:value={changeThreshold} class="form-input number" min="1" max="100" />
-                  <span class="unit">%</span>
-                </div>
-              </div>
-            {/if}
+
           </section>
 
           <section class="section">

@@ -60,15 +60,7 @@ async fn capture_and_translate(
     let (original_text, detected_lang) = ocr::extract_text(&processed_image, &cfg)?;
     let ocr_ms = t1.elapsed().as_millis();
 
-    if cfg.capture_mode == "degisim" {
-        let mut last_text_lock = state.last_text.lock().await;
-        if let Some(last_txt) = last_text_lock.as_ref() {
-            if last_txt == &original_text {
-                return Ok("No significant text change".to_string());
-            }
-        }
-        *last_text_lock = Some(original_text.clone());
-    }
+
 
     // 3. Translation
     let t2 = std::time::Instant::now();
@@ -94,17 +86,30 @@ async fn capture_and_translate(
             eprintln!("[cache] MISS: \"{}...\" → {}", &original_text.chars().take(30).collect::<String>(), target_lang);
         }
         translated_text = translate::translate_text(&original_text, &detected_lang, &cfg, &state.http_client).await?;
-        if cfg.history_save {
-            if let Ok(pool) = get_db(&state).await {
-                let _ = db::insert_history(
-                    &pool,
-                    &original_text,
-                    &translated_text,
-                    &target_lang,
-                    cfg.history_max_records,
-                )
-                .await;
+    }
+
+    // In degisim mode, compare translated text with previous translation
+    if cfg.capture_mode == "degisim" {
+        let mut last_text_lock = state.last_text.lock().await;
+        if let Some(last_txt) = last_text_lock.as_ref() {
+            if last_txt == &translated_text {
+                return Ok("No significant text change".to_string());
             }
+        }
+        *last_text_lock = Some(translated_text.clone());
+    }
+
+    // Save to history (only if not from cache and not skipped by degisim)
+    if !from_cache && cfg.history_save {
+        if let Ok(pool) = get_db(&state).await {
+            let _ = db::insert_history(
+                &pool,
+                &original_text,
+                &translated_text,
+                &target_lang,
+                cfg.history_max_records,
+            )
+            .await;
         }
     }
 
