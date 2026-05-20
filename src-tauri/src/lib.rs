@@ -313,6 +313,11 @@ async fn toggle_server(active: bool, state: State<'_, Arc<AppState>>) -> Result<
     Ok(())
 }
 
+#[tauri::command]
+fn get_app_version() -> String {
+    env!("CARGO_PKG_VERSION").to_string()
+}
+
 #[derive(Serialize)]
 struct UpdateInfo {
     available: bool,
@@ -445,7 +450,8 @@ pub fn run() {
             set_config_path,
             export_history_to_file,
             check_for_update,
-            install_update
+            install_update,
+            get_app_version
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

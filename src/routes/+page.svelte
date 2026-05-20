@@ -108,6 +108,7 @@
   let updateVersion = '';
   let updateBody = '';
   let updateInstalling = false;
+  let appVersion = '0.1.0';
 
   let qrCodeBase64 = '';
   let isConfigLoaded = false;
@@ -158,6 +159,7 @@
       deeplKey = await invoke('get_secret', { key: 'deepl_key' });
       googleKey = await invoke('get_secret', { key: 'google_key' });
       configPath = await invoke('get_config_path');
+      appVersion = await invoke('get_app_version');
       
       if (serverActive) {
         await loadServerInfo();
@@ -932,7 +934,7 @@ bind = $mainMod, I, exec, screen-translator --toggle-interval</code></pre>
               <div class="row-info">
                 <label>Mevcut sürüm</label>
               </div>
-              <div class="badge badge-version">v0.1.0</div>
+              <div class="badge badge-version">v{appVersion}</div>
             </div>
             <div class="row">
               <div class="row-info">
