@@ -26,6 +26,31 @@
     { id: 'uygulama', label: 'Uygulama', icon: icons.settings }
   ];
 
+  // --- OVERLAY STATE ---
+  let overlayVisible = false;
+  let overlayTitle = '';
+  let overlayMessage = '';
+  let overlayType = 'error';
+
+  /**
+   * @param {string} msg
+   * @param {string} title
+   * @param {string} type
+   */
+  function showOverlay(msg, title = 'HATA', type = 'error') {
+    let highlightedMsg = msg.replace(/(Hata:|Warning:|Error:|Failed to|Bölge|Geçmiş)/gi, '<strong class="hl-keyword">$1</strong>');
+    highlightedMsg = highlightedMsg.replace(/'([^']+)'/g, '<strong class="hl-quote">\'$1\'</strong>');
+    
+    overlayMessage = highlightedMsg;
+    overlayTitle = title;
+    overlayType = type;
+    overlayVisible = true;
+  }
+
+  function closeOverlay() {
+    overlayVisible = false;
+  }
+
   // --- STATE VARIABLES ---
   
   // 1. Yakalama
@@ -39,7 +64,7 @@
   let showInGui = false;
 
   // 2. OCR
-  let ocrEngine = 'leptess'; 
+  let ocrEngine = 'oar'; 
   let sourceLang = 'auto'; 
   let autoDetectLang = true;
   let mergeLines = true;
@@ -75,9 +100,14 @@
   let maxHistory = 500;
 
   // 7. Uygulama
-  let runOnStartup = false;
-  let minimizeToTray = true;
   let logLevel = 'bilgi';
+
+  // Update state
+  let updateChecking = false;
+  let updateAvailable = false;
+  let updateVersion = '';
+  let updateBody = '';
+  let updateInstalling = false;
 
   let qrCodeBase64 = '';
   let isConfigLoaded = false;
@@ -122,8 +152,6 @@
       saveHistory = config.history_save;
       maxHistory = config.history_max_records;
       
-      runOnStartup = config.app_start_on_boot;
-      minimizeToTray = config.app_minimize_to_tray;
       logLevel = config.app_log_level;
       
       openaiKey = await invoke('get_secret', { key: 'openai_key' });
@@ -158,13 +186,13 @@
       await invoke('save_config', {
         newConfig: {
           server_enabled: serverActive,
-          server_port: parseInt(serverPort),
+          server_port: Number(serverPort),
           server_local_only: serverLocalOnly,
           server_auto_start: serverAutoStart,
           
           capture_mode: captureMode,
-          capture_interval_sec: parseInt(intervalSeconds),
-          capture_change_threshold: parseInt(changeThreshold),
+          capture_interval_sec: Number(intervalSeconds),
+          capture_change_threshold: Number(changeThreshold),
           capture_last_region: lastRegion,
           
           pre_grayscale: grayscale,
@@ -181,7 +209,7 @@
           ocr_auto_detect_lang: autoDetectLang,
           ocr_merge_lines: mergeLines,
           ocr_merge_paragraphs: mergeParagraphs,
-          ocr_min_chars: parseInt(minCharThreshold),
+          ocr_min_chars: Number(minCharThreshold),
           
           trans_provider: activeProvider,
           trans_target_lang: targetLang,
@@ -191,10 +219,8 @@
           trans_libre_url: libreUrl,
           
           history_save: saveHistory,
-          history_max_records: parseInt(maxHistory),
+          history_max_records: Number(maxHistory),
           
-          app_start_on_boot: runOnStartup,
-          app_minimize_to_tray: minimizeToTray,
           app_log_level: logLevel
         }
       });
@@ -214,11 +240,12 @@
       activeProvider, targetLang, cacheTranslations, openaiEndpoint, openaiModel, libreUrl, openaiKey, deeplKey, googleKey,
       serverActive, serverPort, serverAutoStart, serverLocalOnly,
       saveHistory, maxHistory,
-      runOnStartup, minimizeToTray, logLevel
+      logLevel
     ];
     saveConfig();
   }
 
+  /** @param {Event} e */
   async function handleServerToggle(e) {
     // Server toggle changed
     try {
@@ -235,10 +262,10 @@
     if(confirm("Tüm çeviri geçmişini silmek istediğinize emin misiniz? Bu işlem geri alınamaz.")) {
       try {
         await invoke('clear_history');
-        alert("Geçmiş temizlendi.");
+        showOverlay("Geçmiş başarıyla temizlendi.", "BİLGİ", "success");
       } catch (e) {
         console.error("Geçmiş silinemedi:", e);
-        alert("Hata: " + e);
+        showOverlay("Geçmiş silinemedi: " + e, "HATA", "error");
       }
     }
   }
@@ -249,45 +276,20 @@
     try {
       const history = await invoke('get_history');
       if (!history || history.length === 0) {
-        alert("Geçmiş boş!");
+        showOverlay("Dışa aktarılacak geçmiş bulunamadı!", "UYARI", "warning");
         return;
       }
       
-      let dataStr = '';
-      let mimeType = '';
-      let filename = '';
-
-      if (exportFormat === 'JSON') {
-        dataStr = JSON.stringify(history, null, 2);
-        mimeType = 'application/json';
-        filename = 'tman_history.json';
-      } else if (exportFormat === 'CSV') {
-        dataStr = 'id,original_text,translated_text,source_lang,target_lang,timestamp\n' + 
-                  history.map(r => `${r.id},"${r.original_text.replace(/"/g, '""')}","${r.translated_text.replace(/"/g, '""')}","${r.source_lang}","${r.target_lang}","${r.timestamp}"`).join('\n');
-        mimeType = 'text/csv';
-        filename = 'tman_history.csv';
-      } else { // TXT
-        dataStr = history.map(r => `[${r.timestamp}] ${r.source_lang}->${r.target_lang}\nOriginal: ${r.original_text}\nTranslated: ${r.translated_text}\n`).join('\n---\n');
-        mimeType = 'text/plain';
-        filename = 'tman_history.txt';
-      }
-
-      const blob = new Blob([dataStr], { type: mimeType });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      const savedPath = await invoke('export_history_to_file', { format: exportFormat });
+      showOverlay(`Geçmiş başarıyla kaydedildi:<br><br><b>${savedPath}</b>`, "BAŞARILI", "success");
     } catch (e) {
       console.error("Dışa aktarma hatası:", e);
-      alert("Hata: " + e);
+      showOverlay("Dışa aktarılırken hata oluştu: " + e, "HATA", "error");
     }
   }
 
-  let captureIntervalId = null;
+  /** @type {ReturnType<typeof setTimeout> | undefined} */
+  let captureIntervalId = undefined;
   let isCapturingLoop = false;
 
   async function pickRegion() {
@@ -296,7 +298,7 @@
       lastRegion = region;
     } catch (e) {
       console.error("Bölge seçme hatası:", e);
-      alert("Bölge seçimi iptal edildi veya hata oluştu.");
+      showOverlay("Bölge seçimi iptal edildi veya hata oluştu: " + e, "UYARI", "warning");
     }
   }
 
@@ -307,29 +309,33 @@
       try {
         await invoke('capture_and_translate');
       } catch (e) {
-        if (e !== "No significant change") {
+        if (e !== "No significant text change") {
           console.error("Çeviri hatası:", e);
-          alert("Hata: " + e);
+          showOverlay("Çeviri başarısız: " + e, "HATA", "error");
         }
       }
     } else {
       if (isCapturingLoop) {
-        clearInterval(captureIntervalId);
+        clearTimeout(captureIntervalId);
         isCapturingLoop = false;
-        captureIntervalId = null;
+        captureIntervalId = undefined;
       } else {
         isCapturingLoop = true;
-        // Invoke once immediately
-        invoke('capture_and_translate').catch(e => {
-          if (e !== "No significant change") console.error(e);
-        });
+        let ms = Number(intervalSeconds) * 1000;
         
-        let ms = parseInt(intervalSeconds) * 1000;
-        captureIntervalId = setInterval(() => {
-          invoke('capture_and_translate').catch(e => {
-            if (e !== "No significant change") console.error(e);
-          });
-        }, ms);
+        async function captureLoop() {
+          if (!isCapturingLoop) return;
+          try {
+            await invoke('capture_and_translate');
+          } catch (e) {
+            if (e !== "No significant text change") console.error(e);
+          }
+          if (isCapturingLoop) {
+            captureIntervalId = setTimeout(captureLoop, ms);
+          }
+        }
+        
+        captureLoop();
       }
     }
   }
@@ -337,6 +343,7 @@
   let isInstalling = false;
   let installProgress = '';
 
+  /** @param {string} engine */
   async function installEngine(engine) {
     if (isInstalling) return;
     isInstalling = true;
@@ -511,10 +518,10 @@
                 <label>OCR motoru</label>
               </div>
               <select bind:value={ocrEngine} class="form-select w-auto">
-                <option value="leptess">Tesseract (leptess)</option>
-                <option value="ocrs">ocrs (Rust native)</option>
+                <option value="oar">OAR-OCR (Native Rust)</option>
                 <option value="paddle">PaddleOCR (Sidecar)</option>
                 <option value="easy">EasyOCR (Sidecar)</option>
+                <option value="rapidocr">RapidOCR (Sidecar)</option>
               </select>
             </div>
 
@@ -887,26 +894,7 @@ bind = $mainMod, I, exec, screen-translator --toggle-interval</code></pre>
         <div class="tab-content">
           <section class="section">
             <h3 class="section-title">GENEL</h3>
-            <div class="row">
-              <div class="row-info">
-                <label>Sistem başlangıcında çalıştır</label>
-              </div>
-              <label class="toggle-wrapper">
-                <input type="checkbox" bind:checked={runOnStartup} class="toggle-input" />
-                <div class="toggle-bg"><div class="toggle-dot"></div></div>
-              </label>
-            </div>
-            
-            <div class="row">
-              <div class="row-info">
-                <label>Sistem tepsisine küçült</label>
-                <div class="label-desc">Pencere kapatılınca uygulamayı açık tutar.</div>
-              </div>
-              <label class="toggle-wrapper">
-                <input type="checkbox" bind:checked={minimizeToTray} class="toggle-input" />
-                <div class="toggle-bg"><div class="toggle-dot"></div></div>
-              </label>
-            </div>
+
 
             <div class="row">
               <div class="row-info">
@@ -929,9 +917,9 @@ bind = $mainMod, I, exec, screen-translator --toggle-interval</code></pre>
                 <button class="btn btn-primary" on:click={async () => {
                   try {
                     await invoke('set_config_path', { newPath: configPath });
-                    alert("Config yolu güncellendi ve ayarlar buraya kopyalandı!");
+                    showOverlay("Config yolu güncellendi ve ayarlar buraya kopyalandı!", "BİLGİ", "success");
                   } catch (e) {
-                    alert("Hata: " + e);
+                    showOverlay("Config yolu güncellenirken hata oluştu: " + e, "HATA", "error");
                   }
                 }}>Uygula</button>
               </div>
@@ -942,18 +930,50 @@ bind = $mainMod, I, exec, screen-translator --toggle-interval</code></pre>
             <h3 class="section-title">GÜNCELLEMELER</h3>
             <div class="row">
               <div class="row-info">
-                <label>Sürüm</label>
+                <label>Mevcut sürüm</label>
               </div>
               <div class="badge badge-version">v0.1.0</div>
             </div>
             <div class="row">
               <div class="row-info">
-                <label>Güncellemeleri kontrol et</label>
+                <label>{updateAvailable ? `v${updateVersion} mevcut!` : 'Güncellemeleri kontrol et'}</label>
+                {#if updateAvailable && updateBody}
+                  <div class="label-desc">{updateBody}</div>
+                {/if}
               </div>
-              <label class="toggle-wrapper">
-                <input type="checkbox" class="toggle-input" />
-                <div class="toggle-bg"><div class="toggle-dot"></div></div>
-              </label>
+              {#if updateAvailable}
+                <button class="btn btn-success" on:click={async () => {
+                  updateInstalling = true;
+                  try {
+                    await invoke('install_update');
+                    showOverlay('Güncelleme indirildi. Uygulama yeniden başlatılacak.', 'GÜNCELLEME', 'success');
+                  } catch (e) {
+                    showOverlay('Güncelleme kurulamadı: ' + e, 'HATA', 'error');
+                  }
+                  updateInstalling = false;
+                }} disabled={updateInstalling}>
+                  {updateInstalling ? 'Kuruluyor...' : 'Güncelle'}
+                </button>
+              {:else}
+                <button class="btn btn-primary" on:click={async () => {
+                  updateChecking = true;
+                  try {
+                    const info = await invoke('check_for_update');
+                    if (info.available) {
+                      updateAvailable = true;
+                      updateVersion = info.version;
+                      updateBody = info.body;
+                    } else {
+                      showOverlay('En güncel sürümü kullanıyorsunuz.', 'BİLGİ', 'success');
+                    }
+                  } catch (e) {
+                    showOverlay('Güncelleme kontrol edilemedi: ' + e, 'HATA', 'error');
+                  }
+                  updateChecking = false;
+                }} disabled={updateChecking}>
+                  {updateChecking ? 'Kontrol ediliyor...' : 'Kontrol Et'}
+                </button>
+              {/if}
             </div>
           </section>
         </div>
@@ -962,6 +982,16 @@ bind = $mainMod, I, exec, screen-translator --toggle-interval</code></pre>
     </div>
   </main>
 </div>
+
+{#if overlayVisible}
+<div class="overlay-backdrop" on:click={closeOverlay} role="presentation">
+  <div class="overlay-panel type-{overlayType}" on:click|stopPropagation role="presentation">
+    <h2 class="overlay-title">{overlayTitle}</h2>
+    <p class="overlay-message">{@html overlayMessage}</p>
+    <button class="btn btn-primary" style="margin-top: 15px;" on:click={closeOverlay}>Tamam</button>
+  </div>
+</div>
+{/if}
 
 <style>
   .layout {

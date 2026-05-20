@@ -1,5 +1,5 @@
 #!/bin/bash
-# start.sh - Launch script for Wayland Screen Translator (Tman) - Production Release
+# start_dev.sh - Launch script for Wayland Screen Translator (Tman) - Developer Debug Build
 
 set -e
 
@@ -17,18 +17,18 @@ if [ ! -d "node_modules" ]; then
 fi
 
 # --- Tauri Build ---
-# Compile in release mode (--no-bundle) for maximum performance (essential for native Rust OCR)
-BINARY="src-tauri/target/release/tman"
+# Compile in debug mode (--no-bundle --debug) for fast compilation times during development
+BINARY="src-tauri/target/debug/tman"
 
 if [ ! -f "$BINARY" ]; then
-    # Auto-detect package count for progress estimate
+    # Auto-detect total package count from cargo metadata
     TOTAL=$(cd src-tauri && cargo metadata --format-version 1 2>/dev/null \
         | python3 -c "import sys,json; print(len(json.load(sys.stdin).get('packages',[])))" \
         2>/dev/null || echo "700")
 
     if command -v zenity &>/dev/null; then
-        echo "🔨 İlk sürüm derlemesi başlatılıyor (Optimizasyonlar aktif, birkaç dakika sürebilir)..."
-        (npm run tauri build -- --no-bundle 2>&1 || true) | tee /dev/stderr | {
+        echo "🔨 İlk hata ayıklama (debug) derlemesi başlatılıyor (Bu işlem birkaç dakika sürebilir)..."
+        (npm run tauri build -- --no-bundle --debug 2>&1 || true) | tee /dev/stderr | {
             COUNT=0
             while IFS= read -r line; do
                 case "$line" in
@@ -47,31 +47,33 @@ if [ ! -f "$BINARY" ]; then
                 esac
             done
         } | zenity --progress \
-            --title="Tman - Üretim Sürümü Derleme" \
-            --text="İlk açılış için üretim sürümü derleniyor..." \
+            --title="Tman - İlk Hata Ayıklama Derlemesi" \
+            --text="İlk açılış debug sürümü derleniyor..." \
             --percentage=0 \
             --auto-close \
             --width=500 \
             --no-cancel
     else
-        echo "🔨 İlk sürüm derlemesi başlatılıyor ($TOTAL paket, optimizasyonlar aktif)..."
-        if ! npm run tauri build -- --no-bundle; then
+        echo "🔨 İlk hata ayıklama (debug) derlemesi başlatılıyor ($TOTAL paket)..."
+        if ! npm run tauri build -- --no-bundle --debug; then
             echo "❌ Hata: Derleme sırasında bir hata oluştu."
             exit 1
         fi
     fi
 else
-    # SUBSEQUENT LAUNCH: Check and rebuild silently if code has changed
-    if ! npm run tauri build -- --no-bundle >/dev/null 2>&1; then
-        echo "⚠️  Hızlı derleme başarısız oldu! Yeniden derleniyor..."
-        npm run tauri build -- --no-bundle || exit 1
+    # SUBSEQUENT LAUNCH: Rebuild silently unless error
+    if ! npm run tauri build -- --no-bundle --debug >/dev/null 2>&1; then
+        echo "⚠️  Hızlı derleme başarısız oldu! Terminal üzerinden yeniden derleniyor..."
+        npm run tauri build -- --no-bundle --debug || exit 1
     fi
 fi
 
+# --- Launch the compiled binary directly (only port 4000, no vite dev server) ---
 if [ ! -f "$BINARY" ]; then
-    echo "❌ Hata: Derleme tamamlanamadı."
+    echo "❌ Hata: Derleme tamamlanamadı veya iptal edildi."
+    echo "Lütfen internet bağlantınızı kontrol edip ./start_dev.sh komutunu tekrar çalıştırın."
     exit 1
 fi
 
-echo "✨ Tman açılıyor..."
+echo "✨ Tman (Debug) açılıyor..."
 exec "$BINARY"

@@ -25,17 +25,17 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1", features = ["full"] }
 axum = { version = "0.7", features = ["ws"] }
-reqwest = { version = "0.12", features = ["json"] }
+reqwest = { version = "0.12", features = ["json", "blocking"] }
 image = "0.25"
 whichlang = "0.1"
 sqlx = { version = "0.8", features = ["sqlite", "runtime-tokio", "tls-rustls"] }
 qrcode = "0.14"
 dirs = "5.0"
-leptess = "0.14.0"
 tower-http = { version = "0.6.10", features = ["fs", "cors"] }
 futures-util = "0.3.32"
 base64 = "0.22.1"
 urlencoding = "2"
 keyring = "3.6.1"
 local-ip-address = "0.6"
+oar-ocr = { git = "https://github.com/greatv/oar-ocr", features = ["auto-download"] }
 

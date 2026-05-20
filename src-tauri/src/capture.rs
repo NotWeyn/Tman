@@ -58,8 +58,10 @@ pub fn capture_region(cfg: &AppConfig) -> Result<(DynamicImage, DynamicImage, St
     }
 
     // Preprocess: Contrast
-    if cfg.pre_contrast != "normal" && !cfg.pre_contrast.is_empty() {
-        processed_image = processed_image.adjust_contrast(20.0);
+    match cfg.pre_contrast.as_str() {
+        "hafif" => { processed_image = processed_image.adjust_contrast(15.0); }
+        "guclu" => { processed_image = processed_image.adjust_contrast(40.0); }
+        _ => {} // "kapali", "none", ""
     }
 
     // Preprocess: Binarize

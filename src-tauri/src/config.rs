@@ -42,8 +42,6 @@ pub struct AppConfig {
     pub history_save: bool,
     pub history_max_records: u32,
 
-    pub app_start_on_boot: bool,
-    pub app_minimize_to_tray: bool,
     pub app_log_level: String,
 }
 
@@ -62,10 +60,10 @@ impl Default for AppConfig {
 
             pre_grayscale: false,
             pre_binarize: false,
-            pre_contrast: "none".to_string(),
+            pre_contrast: "kapali".to_string(),
             pre_scale: 1.0,
 
-            ocr_engine: "rapidocr".to_string(),
+            ocr_engine: "oar".to_string(),
             ocr_paddle_path: "".to_string(),
             ocr_easy_path: "".to_string(),
             ocr_rapid_path: "".to_string(),
@@ -86,33 +84,44 @@ impl Default for AppConfig {
             history_save: true,
             history_max_records: 1000,
 
-            app_start_on_boot: false,
-            app_minimize_to_tray: false,
             app_log_level: "info".to_string(),
         }
     }
 }
 
 pub fn get_config_path() -> PathBuf {
-    let pointer_path = PathBuf::from("config_pointer.txt");
+    let data_dir = dirs::data_dir()
+        .unwrap_or_else(|| std::env::temp_dir())
+        .join("tman");
+        
+    if !data_dir.exists() {
+        let _ = fs::create_dir_all(&data_dir);
+    }
+    
+    let pointer_path = data_dir.join("config_pointer.txt");
     if pointer_path.exists() {
         if let Ok(content) = fs::read_to_string(&pointer_path) {
             let path = PathBuf::from(content.trim());
-            // We just return it, even if it doesn't exist yet (so it can be created there)
             if !content.trim().is_empty() {
                 return path;
             }
         }
     }
-    // Default to app directory config.json
-    PathBuf::from("config.json")
+    
+    data_dir.join("config.json")
 }
 
 pub fn set_config_path_pointer(new_path: &str) {
+    let data_dir = dirs::data_dir()
+        .unwrap_or_else(|| std::env::temp_dir())
+        .join("tman");
+        
+    let pointer_path = data_dir.join("config_pointer.txt");
+    
     if new_path.is_empty() || new_path == "config.json" {
-        let _ = fs::remove_file("config_pointer.txt");
+        let _ = fs::remove_file(&pointer_path);
     } else {
-        let _ = fs::write("config_pointer.txt", new_path);
+        let _ = fs::write(&pointer_path, new_path);
     }
 }
 
