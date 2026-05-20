@@ -137,6 +137,7 @@
     "updates_title": "ОБНОВЛЕНИЯ",
     "current_version": "Текущая версия",
     "update_available": "Доступна v{version}!",
+    "update_new_version": "Доступно обновление — v{version}",
     "check_updates": "Проверить обновления",
     "update_downloaded": "Обновление загружено. Приложение перезапустится.",
     "update_failed": "Не удалось установить обновление: ",

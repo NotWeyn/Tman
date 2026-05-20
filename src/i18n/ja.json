@@ -137,6 +137,7 @@
     "updates_title": "アップデート",
     "current_version": "現在のバージョン",
     "update_available": "v{version} が利用可能です！",
+    "update_new_version": "アップデートあり — v{version}",
     "check_updates": "アップデートを確認",
     "update_downloaded": "アップデートがダウンロードされました。アプリを再起動します。",
     "update_failed": "アップデートのインストールに失敗しました: ",

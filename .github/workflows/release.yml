@@ -6,9 +6,9 @@ on:
       - 'v*'
 
 jobs:
-  build-linux:
-    name: Build (Linux)
-    runs-on: ubuntu-24.04
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
 
     permissions:
       contents: write
@@ -16,66 +16,26 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Install Rust (stable)
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Setup Rust Cache
-        uses: swatinem/rust-cache@v2
         with:
-          workspaces: "src-tauri -> target"
+          fetch-depth: 0
 
-      - name: Install Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: 'npm'
-
-      - name: Install Linux system dependencies & Fast Linker
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libwebkit2gtk-4.1-dev \
-            libappindicator3-dev \
-            librsvg2-dev \
-            patchelf \
-            libglib2.0-dev \
-            libgtk-3-dev \
-            libsoup-3.0-dev \
-            libjavascriptcoregtk-4.1-dev \
-            libleptonica-dev \
-            libtesseract-dev \
-            clang \
-            lld
-
-      - name: Install Node dependencies
-        run: npm ci
-
-      - name: Sync version from git tag
+      - name: Sync version and commit to main
         env:
           TAG_NAME: ${{ github.ref_name }}
         run: |
           VERSION="${TAG_NAME#v}"
           echo "Syncing version to $VERSION"
+          
+          git checkout main
           sed -i 's/^version = ".*"/version = "'"$VERSION"'"/' src-tauri/Cargo.toml
           sed -i 's/"version": ".*"/"version": "'"$VERSION"'"/' src-tauri/tauri.conf.json
-
-      - name: Build production binary (No Bundle)
-        env:
-          RUSTFLAGS: "-C link-arg=-fuse-ld=lld"
-          CARGO_NET_GIT_FETCH_WITH_CLI: true
-        run: npm run tauri build -- --no-bundle
-
-      - name: Create tar.gz archive
-        run: |
-          tar -czf tman-linux-x86_64.tar.gz -C src-tauri/target/release tman
-
-      - name: Sign tar.gz archive
-        env:
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-        run: |
-          npx tauri signer sign tman-linux-x86_64.tar.gz
+          sed -i '0,/"version": ".*"/{s/"version": ".*"/"version": "'"$VERSION"'"/}' package.json
+          
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add src-tauri/Cargo.toml src-tauri/tauri.conf.json package.json
+          git commit -m "chore: bump version to $VERSION" || echo "No changes to commit"
+          git push origin main
 
       - name: Generate latest.json for Tauri Auto-Updater
         env:
@@ -88,22 +48,14 @@ jobs:
           # Strip leading 'v' to get raw SemVer for Tauri client
           version_semver = tag_name.lstrip('v')
           
-          sig_path = 'tman-linux-x86_64.tar.gz.sig'
-          if not os.path.exists(sig_path):
-              print('❌ Error: Signature file not found!')
-              sys.exit(1)
-              
-          with open(sig_path, 'r') as f:
-              signature = f.read().strip()
-              
           latest_json = {
               'version': version_semver,
-              'notes': f'Tman {tag_name} sürümü yayınlandı.',
+              'notes': f'Tman {tag_name} sürümü yayınlandı. Yeni güncellemeyi almak için lütfen projeyi manuel olarak tekrar indirin ve start.sh ile çalıştırın.',
               'pub_date': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
               'platforms': {
                   'linux-x86_64': {
-                      'signature': signature,
-                      'url': f'https://github.com/NotWeyn/Tman/releases/download/{tag_name}/tman-linux-x86_64.tar.gz'
+                      'signature': 'NOT_USED_BECAUSE_NO_AUTO_UPDATE',
+                      'url': f'https://github.com/NotWeyn/Tman/releases/tag/{tag_name}'
                   }
               }
           }
@@ -120,17 +72,8 @@ jobs:
         run: |
           gh release create "${{ github.ref_name }}" \
             --title "Tman ${{ github.ref_name }}" \
-            --notes "Tman ${{ github.ref_name }} sürümü yayınlandı. Bu sürüm doğrudan start.sh kullanan kullanıcılar için optimize edilmiştir." \
+            --notes "Tman ${{ github.ref_name }} sürümü yayınlandı. Bu sürümde otomatik güncelleme indirmesi devre dışı bırakılmıştır. Lütfen projeyi manuel olarak güncelleyin." \
             --draft=false \
             --prerelease=false \
-            tman-linux-x86_64.tar.gz \
             latest.json
 
-      - name: Upload artifacts to workflow run
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-build
-          path: |
-            tman-linux-x86_64.tar.gz
-            latest.json
-          if-no-files-found: warn

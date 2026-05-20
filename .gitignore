@@ -13,10 +13,6 @@ src-tauri/gen/
 build_err*.txt
 build_log.txt
 
-# Legacy (kept for safety)
-__pycache__/
-*.py[cod]
-
 # Databases / Logs
 *.db
 *.db-journal

@@ -163,6 +163,18 @@
         await loadServerInfo();
       }
       isConfigLoaded = true;
+
+      // Auto-check for updates on startup (silent, no overlay on failure)
+      try {
+        const info = await invoke('check_for_update');
+        if (info.available) {
+          updateAvailable = true;
+          updateVersion = info.version;
+          updateBody = info.body;
+        }
+      } catch (_) {
+        // Silent fail — don't bother user if check fails on startup
+      }
     } catch (e) {
       console.error("Failed to load config:", e);
     }
@@ -861,49 +873,38 @@ bind = $mainMod, I, exec, screen-translator --toggle-interval</code></pre>
               <div class="row-info">
                 <label>{$t('app.current_version')}</label>
               </div>
-              <div class="badge badge-version">v{appVersion}</div>
-            </div>
-            <div class="row">
-              <div class="row-info">
-                <label>{updateAvailable ? $t('app.update_available').replace('{version}', updateVersion) : $t('app.check_updates')}</label>
-                {#if updateAvailable && updateBody}
-                  <div class="label-desc">{updateBody}</div>
+              <div class="version-status">
+                <div class="badge badge-version">v{appVersion}</div>
+                {#if updateAvailable}
+                  <div class="update-subtitle">{$t('app.update_new_version').replace('{version}', updateVersion)}</div>
                 {/if}
               </div>
-              {#if updateAvailable}
-                <button class="btn btn-success" on:click={async () => {
-                  updateInstalling = true;
-                  try {
-                    await invoke('install_update');
-                    showOverlay($t('app.update_downloaded'), $t('overlay.update'), 'success');
-                  } catch (e) {
-                    showOverlay($t('app.update_failed') + e, $t('overlay.error'), 'error');
-                  }
-                  updateInstalling = false;
-                }} disabled={updateInstalling}>
-                  {updateInstalling ? $t('app.installing') : $t('app.update_btn')}
-                </button>
-              {:else}
-                <button class="btn btn-primary" on:click={async () => {
-                  updateChecking = true;
-                  try {
-                    const info = await invoke('check_for_update');
-                    if (info.available) {
-                      updateAvailable = true;
-                      updateVersion = info.version;
-                      updateBody = info.body;
-                    } else {
-                      showOverlay($t('app.up_to_date'), $t('overlay.info'), 'success');
-                    }
-                  } catch (e) {
-                    showOverlay($t('app.update_check_failed') + e, $t('overlay.error'), 'error');
-                  }
-                  updateChecking = false;
-                }} disabled={updateChecking}>
-                  {updateChecking ? $t('app.checking') : $t('app.check_btn')}
-                </button>
-              {/if}
             </div>
+            {#if !updateAvailable}
+            <div class="row">
+              <div class="row-info">
+                <label>{$t('app.check_updates')}</label>
+              </div>
+              <button class="btn btn-primary" on:click={async () => {
+                updateChecking = true;
+                try {
+                  const info = await invoke('check_for_update');
+                  if (info.available) {
+                    updateAvailable = true;
+                    updateVersion = info.version;
+                    updateBody = info.body;
+                  } else {
+                    showOverlay($t('app.up_to_date'), $t('overlay.info'), 'success');
+                  }
+                } catch (e) {
+                  showOverlay($t('app.update_check_failed') + e, $t('overlay.error'), 'error');
+                }
+                updateChecking = false;
+              }} disabled={updateChecking}>
+                {updateChecking ? $t('app.checking') : $t('app.check_btn')}
+              </button>
+            </div>
+            {/if}
           </section>
         </div>
       {/if}
@@ -1153,6 +1154,26 @@ bind = $mainMod, I, exec, screen-translator --toggle-interval</code></pre>
   .badge-version {
     background: var(--bg-surface-hover);
     color: var(--text-primary);
+  }
+
+  .version-status {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+  }
+
+  .update-subtitle {
+    font-size: 0.72em;
+    color: var(--accent-color);
+    opacity: 0.9;
+    white-space: nowrap;
+    animation: subtlePulse 2s ease-in-out infinite;
+  }
+
+  @keyframes subtlePulse {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 1; }
   }
 
   .server-toggle .toggle-bg {

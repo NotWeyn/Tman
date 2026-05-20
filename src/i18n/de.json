@@ -137,6 +137,7 @@
     "updates_title": "UPDATES",
     "current_version": "Aktuelle Version",
     "update_available": "v{version} verfügbar!",
+    "update_new_version": "Update verfügbar — v{version}",
     "check_updates": "Nach Updates suchen",
     "update_downloaded": "Update heruntergeladen. Die App wird neu gestartet.",
     "update_failed": "Update-Installation fehlgeschlagen: ",

@@ -137,6 +137,7 @@
     "updates_title": "GÜNCELLEMELER",
     "current_version": "Mevcut sürüm",
     "update_available": "v{version} mevcut!",
+    "update_new_version": "Güncelleme mevcut — v{version}",
     "check_updates": "Güncellemeleri kontrol et",
     "update_downloaded": "Güncelleme indirildi. Uygulama yeniden başlatılacak.",
     "update_failed": "Güncelleme kurulamadı: ",
