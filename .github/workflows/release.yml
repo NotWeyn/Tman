@@ -56,26 +56,74 @@ jobs:
       - name: Install Node dependencies
         run: npm ci
 
-      - name: Build and publish release
-        uses: tauri-apps/tauri-action@v0
+      - name: Build production binary (No Bundle)
+        run: npm run tauri build -- --no-bundle
+
+      - name: Create tar.gz archive
+        run: |
+          tar -czf tman-linux-x86_64.tar.gz -C src-tauri/target/release tman
+
+      - name: Sign tar.gz archive
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-        with:
-          tagName: ${{ github.ref_name }}
-          releaseName: Tman ${{ github.ref_name }}
-          releaseBody: |
-            Tman ${{ github.ref_name }} sürümü yayınlandı.
-            Değişiklikler için commit geçmişine bakabilirsiniz.
-          releaseDraft: false
-          prerelease: false
- 
-      - name: Upload artifacts
+        run: |
+          npx tauri signer sign tman-linux-x86_64.tar.gz
+
+      - name: Generate latest.json for Tauri Auto-Updater
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          python3 -c "
+          import os, json, sys
+          from datetime import datetime
+          tag_name = os.environ.get('TAG_NAME', '')
+          # Strip leading 'v' to get raw SemVer for Tauri client
+          version_semver = tag_name.lstrip('v')
+          
+          sig_path = 'tman-linux-x86_64.tar.gz.sig'
+          if not os.path.exists(sig_path):
+              print('❌ Error: Signature file not found!')
+              sys.exit(1)
+              
+          with open(sig_path, 'r') as f:
+              signature = f.read().strip()
+              
+          latest_json = {
+              'version': version_semver,
+              'notes': f'Tman {tag_name} sürümü yayınlandı.',
+              'pub_date': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+              'platforms': {
+                  'linux-x86_64': {
+                      'signature': signature,
+                      'url': f'https://github.com/NotWeyn/Tman/releases/download/{tag_name}/tman-linux-x86_64.tar.gz'
+                  }
+              }
+          }
+          
+          with open('latest.json', 'w') as f:
+              json.dump(latest_json, f, indent=2)
+              
+          print('✅ Generated latest.json successfully!')
+          "
+
+      - name: Create GitHub Release and Upload Assets
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            --title "Tman ${{ github.ref_name }}" \
+            --notes "Tman ${{ github.ref_name }} sürümü yayınlandı. Bu sürüm doğrudan start.sh kullanan kullanıcılar için optimize edilmiştir." \
+            --draft=false \
+            --prerelease=false \
+            tman-linux-x86_64.tar.gz \
+            latest.json
+
+      - name: Upload artifacts to workflow run
         uses: actions/upload-artifact@v4
         with:
           name: linux-build
           path: |
-            src-tauri/target/release/bundle/deb/*.deb
-            src-tauri/target/release/bundle/rpm/*.rpm
+            tman-linux-x86_64.tar.gz
+            latest.json
           if-no-files-found: warn

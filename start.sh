@@ -10,24 +10,31 @@ cd "$(dirname "$0")"
 export WEBKIT_DISABLE_DMABUF_RENDERER=1
 unset KITTY_WINDOW_ID 2>/dev/null || true
 
-# --- Node dependencies setup ---
-if [ ! -d "node_modules" ]; then
-    echo "📦 Node paketleri yükleniyor..."
-    npm install >/dev/null 2>&1 || true
-fi
+# --- Parameter Parsing ---
+REBUILD=false
+for arg in "$@"; do
+    if [ "$arg" = "-r" ] || [ "$arg" = "--rebuild" ]; then
+        REBUILD=true
+    fi
+done
 
-# --- Tauri Build ---
-# Compile in release mode (--no-bundle) for maximum performance (essential for native Rust OCR)
 BINARY="src-tauri/target/release/tman"
 
-if [ ! -f "$BINARY" ]; then
+# --- Rebuild or Launch ---
+if [ ! -f "$BINARY" ] || [ "$REBUILD" = true ]; then
+    # --- Node dependencies setup ---
+    if [ ! -d "node_modules" ]; then
+        echo "📦 Node paketleri yükleniyor..."
+        npm install >/dev/null 2>&1 || true
+    fi
+
     # Auto-detect package count for progress estimate
     TOTAL=$(cd src-tauri && cargo metadata --format-version 1 2>/dev/null \
         | python3 -c "import sys,json; print(len(json.load(sys.stdin).get('packages',[])))" \
         2>/dev/null || echo "700")
 
     if command -v zenity &>/dev/null; then
-        echo "🔨 İlk sürüm derlemesi başlatılıyor (Optimizasyonlar aktif, birkaç dakika sürebilir)..."
+        echo "🔨 Üretim sürümü derlemesi başlatılıyor (Optimizasyonlar aktif, birkaç dakika sürebilir)..."
         (npm run tauri build -- --no-bundle 2>&1 || true) | tee /dev/stderr | {
             COUNT=0
             while IFS= read -r line; do
@@ -48,24 +55,21 @@ if [ ! -f "$BINARY" ]; then
             done
         } | zenity --progress \
             --title="Tman - Üretim Sürümü Derleme" \
-            --text="İlk açılış için üretim sürümü derleniyor..." \
+            --text="Üretim sürümü derleniyor..." \
             --percentage=0 \
             --auto-close \
             --width=500 \
             --no-cancel
     else
-        echo "🔨 İlk sürüm derlemesi başlatılıyor ($TOTAL paket, optimizasyonlar aktif)..."
+        echo "🔨 Üretim sürümü derlemesi başlatılıyor ($TOTAL paket, optimizasyonlar aktif)..."
         if ! npm run tauri build -- --no-bundle; then
             echo "❌ Hata: Derleme sırasında bir hata oluştu."
             exit 1
         fi
     fi
 else
-    # SUBSEQUENT LAUNCH: Check and rebuild silently if code has changed
-    if ! npm run tauri build -- --no-bundle >/dev/null 2>&1; then
-        echo "⚠️  Hızlı derleme başarısız oldu! Yeniden derleniyor..."
-        npm run tauri build -- --no-bundle || exit 1
-    fi
+    echo "✨ Tman zaten derlenmiş, doğrudan başlatılıyor..."
+    echo "💡 Not: Yeniden derlemeye zorlamak için komutu şöyle çalıştırabilirsiniz: ./start.sh -r"
 fi
 
 if [ ! -f "$BINARY" ]; then

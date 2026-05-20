@@ -1323,7 +1323,7 @@ bind = $mainMod, I, exec, screen-translator --toggle-interval</code></pre>
 
   .code-font {
     font-family: 'Courier New', Courier, monospace;
-    color: var(--text-muted);
+    color: var(--text-primary);
   }
 
   .action-header {
