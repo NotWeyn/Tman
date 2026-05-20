@@ -24,7 +24,7 @@ BINARY="src-tauri/target/release/tman"
 if [ ! -f "$BINARY" ] || [ "$REBUILD" = true ]; then
     # --- Node dependencies setup ---
     if [ ! -d "node_modules" ]; then
-        echo "📦 Node paketleri yükleniyor..."
+        echo "📦 Installing Node dependencies..."
         npm install >/dev/null 2>&1 || true
     fi
 
@@ -34,7 +34,7 @@ if [ ! -f "$BINARY" ] || [ "$REBUILD" = true ]; then
         2>/dev/null || echo "700")
 
     if command -v zenity &>/dev/null; then
-        echo "🔨 Üretim sürümü derlemesi başlatılıyor (Optimizasyonlar aktif, birkaç dakika sürebilir)..."
+        echo "🔨 Starting production release build (Optimizations active, this may take a few minutes)..."
         (npm run tauri build -- --no-bundle 2>&1 || true) | tee /dev/stderr | {
             COUNT=0
             while IFS= read -r line; do
@@ -45,37 +45,37 @@ if [ ! -f "$BINARY" ] || [ "$REBUILD" = true ]; then
                         [ "$PCT" -gt 99 ] && PCT=99
                         CRATE=$(echo "$line" | sed 's/.*Compiling //' | cut -d' ' -f1)
                         echo "$PCT"
-                        echo "# Derleniyor ($COUNT/$TOTAL): $CRATE"
+                        echo "# Compiling ($COUNT/$TOTAL): $CRATE"
                         ;;
                     *Finished*)
                         echo "100"
-                        echo "# Derleme tamamlandı! ✨"
+                        echo "# Build finished! ✨"
                         ;;
                 esac
             done
         } | zenity --progress \
-            --title="Tman - Üretim Sürümü Derleme" \
-            --text="Üretim sürümü derleniyor..." \
+            --title="Tman - Production Release Build" \
+            --text="Compiling production release..." \
             --percentage=0 \
             --auto-close \
             --width=500 \
             --no-cancel
     else
-        echo "🔨 Üretim sürümü derlemesi başlatılıyor ($TOTAL paket, optimizasyonlar aktif)..."
+        echo "🔨 Starting production release build ($TOTAL packages, optimizations active)..."
         if ! npm run tauri build -- --no-bundle; then
-            echo "❌ Hata: Derleme sırasında bir hata oluştu."
+            echo "❌ Error: An error occurred during the build."
             exit 1
         fi
     fi
 else
-    echo "✨ Tman zaten derlenmiş, doğrudan başlatılıyor..."
-    echo "💡 Not: Yeniden derlemeye zorlamak için komutu şöyle çalıştırabilirsiniz: ./start.sh -r"
+    echo "✨ Tman is already compiled, starting directly..."
+    echo "💡 Note: To force a rebuild, you can run the command as: ./start.sh -r"
 fi
 
 if [ ! -f "$BINARY" ]; then
-    echo "❌ Hata: Derleme tamamlanamadı."
+    echo "❌ Error: Build could not be completed."
     exit 1
 fi
 
-echo "✨ Tman açılıyor..."
+echo "✨ Launching Tman..."
 exec "$BINARY"

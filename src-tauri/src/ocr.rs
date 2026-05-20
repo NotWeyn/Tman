@@ -1,7 +1,5 @@
 use crate::config::AppConfig;
 use image::DynamicImage;
-use std::path::PathBuf;
-use std::process::Command;
 use std::sync::Mutex;
 
 /// Lazily-initialized OAR-OCR engine. Stays resident in memory so
@@ -10,11 +8,7 @@ use std::sync::Mutex;
 static OAR_ENGINE: Mutex<Option<oar_ocr::oarocr::OAROCR>> = Mutex::new(None);
 
 pub fn extract_text(image: &DynamicImage, cfg: &AppConfig) -> Result<(String, String), String> {
-    let raw_text = match cfg.ocr_engine.as_str() {
-        "oar" => extract_text_oar(image),
-        "paddle" | "easy" | "rapidocr" => extract_text_sidecar(image, cfg),
-        other => return Err(format!("Desteklenmeyen OCR motoru seçildi: {}. Lütfen ayarlardan çalışan bir OCR motoru seçin.", other)),
-    }?;
+    let raw_text = extract_text_oar(image)?;
 
     let char_count = raw_text.chars().filter(|c| !c.is_whitespace()).count();
     if char_count < cfg.ocr_min_chars as usize {
@@ -89,51 +83,4 @@ fn extract_text_oar(image: &DynamicImage) -> Result<String, String> {
     }
 
     Ok(text_parts.join("\n"))
-}
-
-fn extract_text_sidecar(image: &DynamicImage, cfg: &AppConfig) -> Result<String, String> {
-    let temp_path = std::env::temp_dir().join("tman_capture.png");
-    image
-        .save_with_format(&temp_path, image::ImageFormat::Png)
-        .map_err(|e| format!("Failed to save temp image: {}", e))?;
-
-    // Use binary path from config
-    let bin_path = match cfg.ocr_engine.as_str() {
-        "paddle" => &cfg.ocr_paddle_path,
-        "easy" => &cfg.ocr_easy_path,
-        "rapidocr" => &cfg.ocr_rapid_path,
-        _ => "",
-    };
-
-    // Fallback script mode if no binary is configured
-    let mut cmd = if bin_path.is_empty() {
-        let mut c = Command::new("python");
-        let script_path = PathBuf::from("../sidecars/ocr_engine.py");
-        let active_script = if script_path.exists() {
-            script_path
-        } else {
-            PathBuf::from("sidecars/ocr_engine.py")
-        };
-        c.arg(active_script).arg(&temp_path);
-        c
-    } else {
-        let mut c = Command::new(bin_path);
-        c.arg(&temp_path);
-        // Add flags if binary supports them
-        if cfg.ocr_use_gpu {
-            c.arg("--use-gpu");
-        }
-        c.arg("--lang").arg(&cfg.ocr_source_lang);
-        c
-    };
-
-    let output = cmd
-        .output()
-        .map_err(|e| format!("Command execution failed: {}", e))?;
-
-    if output.status.success() {
-        Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
-    } else {
-        Err(String::from_utf8_lossy(&output.stderr).to_string())
-    }
 }

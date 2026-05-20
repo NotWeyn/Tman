@@ -13,7 +13,7 @@ pub struct TranslationHistory {
 
 pub async fn init_db(db_url: &str) -> Result<SqlitePool, String> {
     let pool = SqlitePoolOptions::new()
-        .max_connections(5)
+        .max_connections(2)
         .connect(db_url)
         .await
         .map_err(|e| format!("Failed to connect to db: {}", e))?;

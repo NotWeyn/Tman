@@ -1,33 +1,29 @@
 use crate::config::{AppConfig, get_secret};
 use serde_json::json;
 
-pub async fn translate_text(text: &str, source_lang: &str, cfg: &AppConfig) -> Result<String, String> {
+pub async fn translate_text(text: &str, source_lang: &str, cfg: &AppConfig, client: &reqwest::Client) -> Result<String, String> {
     if text.trim().is_empty() {
         return Ok("".to_string());
     }
 
     match cfg.trans_provider.as_str() {
-        "openai" => translate_openai(text, source_lang, cfg).await,
-        "deepl" => translate_deepl(text, source_lang, cfg).await,
-        "libre" => translate_libre(text, source_lang, cfg).await,
-        _ => translate_google(text, source_lang, cfg).await,
+        "openai" => translate_openai(text, source_lang, cfg, client).await,
+        "deepl" => translate_deepl(text, source_lang, cfg, client).await,
+        "libre" => translate_libre(text, source_lang, cfg, client).await,
+        _ => translate_google(text, source_lang, cfg, client).await,
     }
 }
 
-async fn translate_google(text: &str, _source_lang: &str, cfg: &AppConfig) -> Result<String, String> {
-    // For now using free web api
-    let client = reqwest::Client::builder()
-        .user_agent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36")
-        .build()
-        .map_err(|e| e.to_string())?;
-
+async fn translate_google(text: &str, _source_lang: &str, cfg: &AppConfig, client: &reqwest::Client) -> Result<String, String> {
     let url = format!(
         "https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl={}&dt=t&q={}",
         cfg.trans_target_lang,
         urlencoding::encode(text)
     );
 
-    let res = client.get(&url).send().await.map_err(|e| e.to_string())?;
+    let res = client.get(&url)
+        .header("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36")
+        .send().await.map_err(|e| e.to_string())?;
     
     if !res.status().is_success() {
         return Err(format!("Google API error: {}", res.status()));
@@ -47,14 +43,12 @@ async fn translate_google(text: &str, _source_lang: &str, cfg: &AppConfig) -> Re
     Ok(translated)
 }
 
-async fn translate_openai(text: &str, source_lang: &str, cfg: &AppConfig) -> Result<String, String> {
+async fn translate_openai(text: &str, source_lang: &str, cfg: &AppConfig, client: &reqwest::Client) -> Result<String, String> {
     let api_key = get_secret("openai_key");
     if api_key.is_empty() {
         return Err("OpenAI API key not found in keyring".to_string());
     }
 
-    let client = reqwest::Client::new();
-    
     let system_prompt = format!("You are a translator. Translate the text from {} to {}. Reply ONLY with the translated text without quotes.", source_lang, cfg.trans_target_lang);
     
     let body = json!({
@@ -86,13 +80,12 @@ async fn translate_openai(text: &str, source_lang: &str, cfg: &AppConfig) -> Res
     }
 }
 
-async fn translate_deepl(text: &str, _source_lang: &str, cfg: &AppConfig) -> Result<String, String> {
+async fn translate_deepl(text: &str, _source_lang: &str, cfg: &AppConfig, client: &reqwest::Client) -> Result<String, String> {
     let api_key = get_secret("deepl_key");
     if api_key.is_empty() {
         return Err("DeepL API key not found in keyring".to_string());
     }
 
-    let client = reqwest::Client::new();
     let url = if api_key.ends_with(":fx") {
         "https://api-free.deepl.com/v2/translate"
     } else {
@@ -126,8 +119,7 @@ async fn translate_deepl(text: &str, _source_lang: &str, cfg: &AppConfig) -> Res
     Err("Invalid DeepL response".to_string())
 }
 
-async fn translate_libre(text: &str, source_lang: &str, cfg: &AppConfig) -> Result<String, String> {
-    let client = reqwest::Client::new();
+async fn translate_libre(text: &str, source_lang: &str, cfg: &AppConfig, client: &reqwest::Client) -> Result<String, String> {
     let sl = if source_lang == "auto" { "auto" } else { source_lang };
     
     let body = json!({

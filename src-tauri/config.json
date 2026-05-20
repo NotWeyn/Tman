@@ -11,11 +11,6 @@
   "pre_binarize": false,
   "pre_contrast": "kapali",
   "pre_scale": 1.0,
-  "ocr_engine": "ocrs",
-  "ocr_paddle_path": "",
-  "ocr_easy_path": "",
-  "ocr_rapid_path": "",
-  "ocr_use_gpu": false,
   "ocr_source_lang": "eng",
   "ocr_auto_detect_lang": true,
   "ocr_merge_lines": true,
@@ -29,7 +24,6 @@
   "trans_libre_url": "http://localhost:5000/translate",
   "history_save": true,
   "history_max_records": 1000,
-  "app_start_on_boot": false,
-  "app_minimize_to_tray": false,
-  "app_log_level": "info"
+  "app_log_level": "info",
+  "app_lang": "en"
 }

@@ -1,6 +1,8 @@
 <script>
   import { invoke } from '@tauri-apps/api/core';
   import { onMount } from 'svelte';
+  import LanguagePicker from '$lib/LanguagePicker.svelte';
+  import { t, locale, setLocale } from '$lib/i18n';
 
   // Active Tab State
   let activeTab = 'yakalama';
@@ -16,14 +18,14 @@
     monitorPlay: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M14 9.5 10 7v5z"/><line x1="12" x2="12" y1="17" y2="21"/><line x1="8" x2="16" y1="21" y2="21"/></svg>`
   };
 
-  const tabs = [
-    { id: 'yakalama', label: 'Yakalama', icon: icons.camera },
-    { id: 'ocr', label: 'OCR', icon: icons.type },
-    { id: 'ceviri', label: 'Çeviri', icon: icons.languages },
-    { id: 'mobil', label: 'Mobil sunucu', icon: icons.smartphone },
-    { id: 'kisayollar', label: 'Kısayollar', icon: icons.keyboard },
-    { id: 'gecmis', label: 'Geçmiş', icon: icons.clock },
-    { id: 'uygulama', label: 'Uygulama', icon: icons.settings }
+  $: tabs = [
+    { id: 'yakalama', label: $t('tabs.capture'), icon: icons.camera },
+    { id: 'ocr', label: $t('tabs.ocr'), icon: icons.type },
+    { id: 'ceviri', label: $t('tabs.translate'), icon: icons.languages },
+    { id: 'mobil', label: $t('tabs.server'), icon: icons.smartphone },
+    { id: 'kisayollar', label: $t('tabs.shortcuts'), icon: icons.keyboard },
+    { id: 'gecmis', label: $t('tabs.history'), icon: icons.clock },
+    { id: 'uygulama', label: $t('tabs.app'), icon: icons.settings }
   ];
 
   // --- OVERLAY STATE ---
@@ -64,17 +66,12 @@
   let showInGui = false;
 
   // 2. OCR
-  let ocrEngine = 'oar'; 
   let sourceLang = 'auto'; 
   let autoDetectLang = true;
   let mergeLines = true;
   let mergeParagraphs = false;
   let minCharThreshold = 5;
-  let useGpu = false;
-  let paddlePath = '';
-  let easyPath = '';
 
-  $: isSidecar = ocrEngine === 'paddle' || ocrEngine === 'easy';
   $: isAutoLang = sourceLang === 'auto';
 
   // 3. Çeviri
@@ -101,6 +98,10 @@
 
   // 7. Uygulama
   let logLevel = 'bilgi';
+  let appLang = 'en';
+
+  // Sync i18n locale when appLang changes
+  $: setLocale(appLang);
 
   // Update state
   let updateChecking = false;
@@ -128,10 +129,6 @@
       contrast = config.pre_contrast;
       scale = config.pre_scale === 1.0 ? '1x' : config.pre_scale === 2.0 ? '2x' : '3x';
       
-      ocrEngine = config.ocr_engine;
-      paddlePath = config.ocr_paddle_path;
-      easyPath = config.ocr_easy_path;
-      useGpu = config.ocr_use_gpu;
       sourceLang = config.ocr_source_lang;
       autoDetectLang = config.ocr_auto_detect_lang;
       mergeLines = config.ocr_merge_lines;
@@ -154,6 +151,7 @@
       maxHistory = config.history_max_records;
       
       logLevel = config.app_log_level;
+      appLang = config.app_lang || 'tr';
       
       openaiKey = await invoke('get_secret', { key: 'openai_key' });
       deeplKey = await invoke('get_secret', { key: 'deepl_key' });
@@ -202,11 +200,6 @@
           pre_contrast: contrast,
           pre_scale: scaleFloat,
           
-          ocr_engine: ocrEngine,
-          ocr_paddle_path: paddlePath,
-          ocr_easy_path: easyPath,
-          ocr_rapid_path: "",
-          ocr_use_gpu: useGpu,
           ocr_source_lang: sourceLang,
           ocr_auto_detect_lang: autoDetectLang,
           ocr_merge_lines: mergeLines,
@@ -223,7 +216,8 @@
           history_save: saveHistory,
           history_max_records: Number(maxHistory),
           
-          app_log_level: logLevel
+          app_log_level: logLevel,
+          app_lang: appLang
         }
       });
       await invoke('set_secret', { key: 'openai_key', secret: openaiKey });
@@ -238,11 +232,11 @@
     let _deps = [
       captureMode, intervalSeconds, changeThreshold, lastRegion,
       grayscale, binarization, contrast, scale,
-      ocrEngine, paddlePath, easyPath, useGpu, sourceLang, autoDetectLang, mergeLines, mergeParagraphs, minCharThreshold,
+      sourceLang, autoDetectLang, mergeLines, mergeParagraphs, minCharThreshold,
       activeProvider, targetLang, cacheTranslations, openaiEndpoint, openaiModel, libreUrl, openaiKey, deeplKey, googleKey,
       serverActive, serverPort, serverAutoStart, serverLocalOnly,
       saveHistory, maxHistory,
-      logLevel
+      logLevel, appLang
     ];
     saveConfig();
   }
@@ -342,38 +336,18 @@
     }
   }
 
-  let isInstalling = false;
-  let installProgress = '';
 
-  /** @param {string} engine */
-  async function installEngine(engine) {
-    if (isInstalling) return;
-    isInstalling = true;
-    installProgress = engine === 'paddle' ? 'PaddleOCR indiriliyor ve kuruluyor...' : 'EasyOCR indiriliyor ve kuruluyor...';
-    
-    console.log(`${engine} kurulumu simüle ediliyor...`);
-    // TODO: Connect to Rust backend to run uv pip install rapidocr-onnxruntime / easyocr
-    setTimeout(() => {
-      if (engine === 'paddle') {
-        paddlePath = './.venv/bin/paddleocr';
-      } else {
-        easyPath = './.venv/bin/easyocr';
-      }
-      isInstalling = false;
-      installProgress = '';
-    }, 2500);
-  }
 </script>
 
 <div class="layout">
   <aside class="sidebar">
     <div class="sidebar-header" style="flex-direction: column; gap: 10px; align-items: stretch;">
-      <span class="title text-center">AYARLAR</span>
+      <span class="title text-center">{$t('common.settings')}</span>
       <button class="btn {captureMode === 'manuel' ? 'btn-primary' : (isCapturingLoop ? 'btn-danger' : 'btn-success')} w-100" on:click={toggleCaptureLoop}>
         {#if captureMode === 'manuel'}
-          Çevir
+          {$t('capture.single')}
         {:else}
-          {isCapturingLoop ? 'Durdur' : 'Başlat'}
+          {isCapturingLoop ? $t('capture.stop') : $t('capture.start')}
         {/if}
       </button>
     </div>
@@ -398,37 +372,36 @@
           <div class="action-header">
             <button class="btn btn-primary btn-large w-100" on:click={pickRegion}>
               {@html icons.camera}
-              Ekranı Yakala
+              {$t('capture.capture_btn')}
             </button>
             <div class="row" style="margin-top: 15px; flex-direction: column; align-items: stretch; gap: 5px;">
-              <div class="label-desc text-center" style="opacity: 0.8; font-size: 0.85em;">Son yakalanan bölge koordinatları (Düzenleyebilirsiniz)</div>
-              <input type="text" class="form-input code-font text-center" bind:value={lastRegion} placeholder="Örn: 1000,300 200x50" />
+              <div class="label-desc text-center" style="opacity: 0.8; font-size: 0.85em;">{$t('capture.region_hint')}</div>
+              <input type="text" class="form-input code-font text-center" bind:value={lastRegion} placeholder={$t('capture.region_placeholder')} />
             </div>
           </div>
 
           <section class="section">
-            <h3 class="section-title">YAKALAMA MODU</h3>
+            <h3 class="section-title">{$t('capture.title')}</h3>
             
             <div class="row">
               <div class="row-info">
-                <label>Mod</label>
-                <div class="label-desc">Ekranın nasıl yakalanacağını seçin.</div>
+                <label>{$t('capture.mode')}</label>
               </div>
               <select bind:value={captureMode} class="form-select w-auto">
-                <option value="manuel">Manuel</option>
-                <option value="interval">Interval (Aralıklı)</option>
-                <option value="degisim">Değişim algılama</option>
+                <option value="manuel">{$t('capture.mode_manual')}</option>
+                <option value="interval">{$t('capture.mode_interval')}</option>
+                <option value="degisim">{$t('capture.mode_change')}</option>
               </select>
             </div>
 
             {#if captureMode === 'interval' || captureMode === 'degisim'}
               <div class="row sub-row">
                 <div class="row-info">
-                  <label>Interval süresi</label>
+                  <label>{$t('capture.interval')}</label>
                 </div>
                 <div class="input-with-unit">
                   <input type="number" bind:value={intervalSeconds} class="form-input number" min="1" max="60" />
-                  <span class="unit">sn</span>
+                  <span class="unit">{$t('capture.interval_unit')}</span>
                 </div>
               </div>
             {/if}
@@ -436,8 +409,8 @@
             {#if captureMode === 'degisim'}
               <div class="row sub-row">
                 <div class="row-info">
-                  <label>Değişim eşiği</label>
-                  <div class="label-desc">Sadece bu oranın üzerinde görsel değişim olursa çevirir.</div>
+                  <label>{$t('capture.threshold')}</label>
+                  <div class="label-desc">{$t('capture.threshold_desc')}</div>
                 </div>
                 <div class="input-with-unit">
                   <input type="number" bind:value={changeThreshold} class="form-input number" min="1" max="100" />
@@ -448,12 +421,12 @@
           </section>
 
           <section class="section">
-            <h3 class="section-title">GÖRÜNTÜ ÖN İŞLEME</h3>
+            <h3 class="section-title">{$t('preprocessing.title')}</h3>
             
             <div class="row">
               <div class="row-info">
-                <label>Gri tonlama (Grayscale)</label>
-                <div class="label-desc">Görüntüyü siyah-beyaza çevirerek OCR doğruluğunu artırır.</div>
+                <label>{$t('preprocessing.grayscale')}</label>
+                <div class="label-desc">{$t('preprocessing.grayscale_desc')}</div>
               </div>
               <label class="toggle-wrapper">
                 <input type="checkbox" bind:checked={grayscale} class="toggle-input" />
@@ -463,8 +436,8 @@
 
             <div class="row">
               <div class="row-info">
-                <label>Binarization</label>
-                <div class="label-desc">Gürültüyü azaltır, metni keskinleştirir.</div>
+                <label>{$t('preprocessing.binarize')}</label>
+                <div class="label-desc">{$t('preprocessing.binarize_desc')}</div>
               </div>
               <label class="toggle-wrapper">
                 <input type="checkbox" bind:checked={binarization} class="toggle-input" />
@@ -474,33 +447,33 @@
 
             <div class="row">
               <div class="row-info">
-                <label>Kontrast artırma</label>
+                <label>{$t('preprocessing.contrast')}</label>
               </div>
               <select bind:value={contrast} class="form-select w-auto">
-                <option value="kapali">Kapalı</option>
-                <option value="hafif">Hafif</option>
-                <option value="guclu">Güçlü</option>
+                <option value="kapali">{$t('preprocessing.contrast_off')}</option>
+                <option value="hafif">{$t('preprocessing.contrast_light')}</option>
+                <option value="guclu">{$t('preprocessing.contrast_strong')}</option>
               </select>
             </div>
 
             <div class="row">
               <div class="row-info">
-                <label>Ölçekleme</label>
-                <div class="label-desc">Küçük fontları büyütmek için.</div>
+                <label>{$t('preprocessing.scale')}</label>
+                <div class="label-desc">{$t('preprocessing.scale_desc')}</div>
               </div>
               <select bind:value={scale} class="form-select w-auto">
                 <option value="1x">1x</option>
-                <option value="2x">2x (Önerilen)</option>
+                <option value="2x">{$t('preprocessing.scale_recommended')}</option>
                 <option value="3x">3x</option>
               </select>
             </div>
           </section>
 
           <section class="section">
-            <h3 class="section-title">ÇIKTI</h3>
+            <h3 class="section-title">{$t('output.title')}</h3>
             <div class="row">
               <div class="row-info">
-                <label>GUI'de göster</label>
+                <label>{$t('output.show_in_gui')}</label>
               </div>
               <label class="toggle-wrapper">
                 <input type="checkbox" bind:checked={showInGui} class="toggle-input" />
@@ -514,37 +487,27 @@
       {#if activeTab === 'ocr'}
         <div class="tab-content">
           <section class="section">
-            <h3 class="section-title">MOTOR</h3>
+            <h3 class="section-title">{$t('ocr.title')}</h3>
             <div class="row">
               <div class="row-info">
-                <label>OCR motoru</label>
+                <label>{$t('ocr.engine')}</label>
+                <div class="label-desc">{$t('ocr.engine_desc')}</div>
               </div>
-              <select bind:value={ocrEngine} class="form-select w-auto">
-                <option value="oar">OAR-OCR (Native Rust)</option>
-                <option value="paddle">PaddleOCR (Sidecar)</option>
-                <option value="easy">EasyOCR (Sidecar)</option>
-                <option value="rapidocr">RapidOCR (Sidecar)</option>
-              </select>
+              <span class="badge badge-active">OAR-OCR</span>
             </div>
 
             <div class="row">
               <div class="row-info">
-                <label>Kaynak dil</label>
-                <div class="label-desc">Beklenen metnin dili.</div>
+                <label>{$t('ocr.source_lang')}</label>
+                <div class="label-desc">{$t('ocr.source_lang_desc')}</div>
               </div>
-              <select bind:value={sourceLang} class="form-select w-auto">
-                <option value="auto">Otomatik</option>
-                <option value="en">İngilizce</option>
-                <option value="jp">Japonca</option>
-                <option value="kr">Korece</option>
-                <option value="de">Almanca</option>
-              </select>
+              <LanguagePicker bind:value={sourceLang} showAuto={true} label={$t('ocr.source_lang_pick')} />
             </div>
 
             <div class="row {isAutoLang ? '' : 'disabled'}">
               <div class="row-info">
-                <label>Otomatik dil tespiti</label>
-                <div class="label-desc">Whichlang ile offline dil tahmini. Sadece 'Otomatik' seçiliyken çalışır.</div>
+                <label>{$t('ocr.auto_detect')}</label>
+                <div class="label-desc">{$t('ocr.auto_detect_desc')}</div>
               </div>
               <label class="toggle-wrapper">
                 <input type="checkbox" bind:checked={autoDetectLang} disabled={!isAutoLang} class="toggle-input" />
@@ -554,11 +517,11 @@
           </section>
 
           <section class="section">
-            <h3 class="section-title">TEXT POST-PROCESSING</h3>
+            <h3 class="section-title">{$t('text.title')}</h3>
             <div class="row">
               <div class="row-info">
-                <label>Satır birleştirme</label>
-                <div class="label-desc">Yanlış kesilmiş cümleleri tek satır yapar.</div>
+                <label>{$t('text.merge_lines')}</label>
+                <div class="label-desc">{$t('text.merge_lines_desc')}</div>
               </div>
               <label class="toggle-wrapper">
                 <input type="checkbox" bind:checked={mergeLines} class="toggle-input" />
@@ -567,8 +530,8 @@
             </div>
             <div class="row">
               <div class="row-info">
-                <label>Paragraf birleştirme</label>
-                <div class="label-desc">Dikey akan metin bloklarını birleştirir (Örn. Manga).</div>
+                <label>{$t('text.merge_paragraphs')}</label>
+                <div class="label-desc">{$t('text.merge_paragraphs_desc')}</div>
               </div>
               <label class="toggle-wrapper">
                 <input type="checkbox" bind:checked={mergeParagraphs} class="toggle-input" />
@@ -577,69 +540,24 @@
             </div>
             <div class="row">
               <div class="row-info">
-                <label>Minimum karakter eşiği</label>
-                <div class="label-desc">Anlamsız tekil karakterleri yoksaymak için.</div>
+                <label>{$t('text.min_chars')}</label>
+                <div class="label-desc">{$t('text.min_chars_desc')}</div>
               </div>
               <input type="number" bind:value={minCharThreshold} class="form-input number" />
             </div>
           </section>
 
-          {#if isSidecar}
-          <section class="section">
-            <h3 class="section-title">SIDECAR AYARLARI</h3>
-            <div class="row">
-              <div class="row-info">
-                <label>GPU kullan (CUDA)</label>
-              </div>
-              <label class="toggle-wrapper">
-                <input type="checkbox" bind:checked={useGpu} class="toggle-input" />
-                <div class="toggle-bg"><div class="toggle-dot"></div></div>
-              </label>
-            </div>
-            
-            {#if ocrEngine === 'paddle'}
-            <div class="row full-col">
-              <label>PaddleOCR binary yolu</label>
-              <div class="input-with-button w-100">
-                <input type="text" bind:value={paddlePath} placeholder="Yüklü değilse indirebilirsiniz..." class="form-input" />
-                {#if !paddlePath}
-                  <button class="btn btn-primary" on:click={() => installEngine('paddle')} disabled={isInstalling}>
-                    {isInstalling && installProgress.includes('Paddle') ? 'İndiriliyor...' : 'İndir & Kur'}
-                  </button>
-                {/if}
-              </div>
-            </div>
-            {/if}
-            
-            {#if ocrEngine === 'easy'}
-            <div class="row full-col">
-              <label>EasyOCR binary yolu</label>
-              <div class="input-with-button w-100">
-                <input type="text" bind:value={easyPath} placeholder="Yüklü değilse indirebilirsiniz..." class="form-input" />
-                {#if !easyPath}
-                  <button class="btn btn-primary" on:click={() => installEngine('easy')} disabled={isInstalling}>
-                    {isInstalling && installProgress.includes('Easy') ? 'İndiriliyor...' : 'İndir & Kur'}
-                  </button>
-                {/if}
-              </div>
-            </div>
-            {/if}
 
-            {#if isInstalling}
-              <div class="install-status">{installProgress}</div>
-            {/if}
-          </section>
-          {/if}
         </div>
       {/if}
 
       {#if activeTab === 'ceviri'}
         <div class="tab-content">
           <section class="section">
-            <h3 class="section-title">PROVIDER</h3>
+            <h3 class="section-title">{$t('translate.title')}</h3>
             <div class="row">
               <div class="row-info">
-                <label>Aktif provider</label>
+                <label>{$t('translate.provider')}</label>
               </div>
               <select bind:value={activeProvider} class="form-select w-auto">
                 <option value="openai">OpenAI-compatible</option>
@@ -651,21 +569,15 @@
 
             <div class="row">
               <div class="row-info">
-                <label>Hedef dil</label>
+                <label>{$t('translate.target_lang')}</label>
               </div>
-              <select bind:value={targetLang} class="form-select w-auto">
-                <option value="tr">Türkçe</option>
-                <option value="en">İngilizce</option>
-                <option value="de">Almanca</option>
-                <option value="fr">Fransızca</option>
-                <option value="es">İspanyolca</option>
-              </select>
+              <LanguagePicker bind:value={targetLang} showAuto={false} label={$t('translate.target_lang_pick')} />
             </div>
 
             <div class="row">
               <div class="row-info">
-                <label>Önbellekleme</label>
-                <div class="label-desc">Aynı metni tekrar çevirirken API yerine DB'den getirir.</div>
+                <label>{$t('translate.cache')}</label>
+                <div class="label-desc">{$t('translate.cache_desc')}</div>
               </div>
               <label class="toggle-wrapper">
                 <input type="checkbox" bind:checked={cacheTranslations} class="toggle-input" />
@@ -677,17 +589,17 @@
           <!-- Provider Specific Settings -->
           {#if activeProvider === 'openai'}
           <section class="section">
-            <h3 class="section-title">LOCAL Aİ AYARLARI</h3>
+            <h3 class="section-title">{$t('provider.openai_title')}</h3>
             <div class="row full-col">
-              <label>API endpoint</label>
+              <label>{$t('provider.openai_endpoint')}</label>
               <input type="text" bind:value={openaiEndpoint} placeholder="http://localhost:5000" class="form-input" />
             </div>
             <div class="row full-col">
-              <label>API anahtarı</label>
+              <label>{$t('provider.openai_key')}</label>
               <input type="password" bind:value={openaiKey} placeholder="sk-..." class="form-input" />
             </div>
             <div class="row full-col">
-              <label>Model</label>
+              <label>{$t('provider.openai_model')}</label>
               <input type="text" bind:value={openaiModel} placeholder="local-model" class="form-input" />
             </div>
           </section>
@@ -695,9 +607,9 @@
 
           {#if activeProvider === 'deepl'}
           <section class="section">
-            <h3 class="section-title">DEEPL AYARLARI</h3>
+            <h3 class="section-title">{$t('provider.deepl_title')}</h3>
             <div class="row full-col">
-              <label>API anahtarı</label>
+              <label>{$t('provider.deepl_key')}</label>
               <input type="password" bind:value={deeplKey} placeholder="Auth key..." class="form-input" />
             </div>
           </section>
@@ -705,9 +617,9 @@
 
           {#if activeProvider === 'google'}
           <section class="section">
-            <h3 class="section-title">GOOGLE TRANSLATE AYARLARI</h3>
+            <h3 class="section-title">{$t('provider.google_title')}</h3>
             <div class="row full-col">
-              <label>API anahtarı (Opsiyonel)</label>
+              <label>{$t('provider.google_key')}</label>
               <input type="password" bind:value={googleKey} placeholder="Key..." class="form-input" />
             </div>
           </section>
@@ -715,9 +627,9 @@
 
           {#if activeProvider === 'libre'}
           <section class="section">
-            <h3 class="section-title">LIBRETRANSLATE AYARLARI</h3>
+            <h3 class="section-title">{$t('provider.libre_title')}</h3>
             <div class="row full-col">
-              <label>Sunucu URL'i</label>
+              <label>{$t('provider.libre_url')}</label>
               <input type="text" bind:value={libreUrl} placeholder="http://localhost:5000" class="form-input" />
             </div>
           </section>
@@ -731,13 +643,13 @@
             <div class="server-info">
               <div class="server-icon">{@html icons.monitorPlay}</div>
               <div>
-                <h2 class="server-title">Yerel web sunucu</h2>
-                <div class="server-url">{serverActive ? `http://${serverIp}:${serverPort}` : 'Bağlantı bekleniyor...'}</div>
+                <h2 class="server-title">{$t('server.title')}</h2>
+                <div class="server-url">{serverActive ? `http://${serverIp}:${serverPort}` : $t('server.waiting')}</div>
               </div>
             </div>
             <div class="server-actions">
               <div class="badge {serverActive ? 'badge-active' : 'badge-inactive'}">
-                {serverActive ? 'Aktif' : 'Kapalı'}
+                {serverActive ? $t('server.active') : $t('server.inactive')}
               </div>
               <label class="toggle-wrapper server-toggle">
                 <input type="checkbox" bind:checked={serverActive} on:change={handleServerToggle} class="toggle-input" />
@@ -755,26 +667,26 @@
                   {:else}
                     <svg width="150" height="150" viewBox="0 0 100 100">
                       <rect width="100" height="100" fill="white" />
-                      <text x="50" y="50" dominant-baseline="middle" text-anchor="middle" font-size="10" fill="black">Yükleniyor...</text>
+                      <text x="50" y="50" dominant-baseline="middle" text-anchor="middle" font-size="10" fill="black">{$t('server.loading')}</text>
                     </svg>
                   {/if}
                 </div>
-                <p>Kameranızla okutarak bağlanın</p>
+                <p>{$t('server.qr_scan')}</p>
               </div>
             </div>
           {/if}
 
           <section class="section">
-            <h3 class="section-title">SUNUCU AYARLARI</h3>
+            <h3 class="section-title">{$t('server.settings_title')}</h3>
             <div class="row">
               <div class="row-info">
-                <label>Port</label>
+                <label>{$t('server.port')}</label>
               </div>
               <input type="number" bind:value={serverPort} class="form-input number" />
             </div>
             <div class="row">
               <div class="row-info">
-                <label>Uygulama açılışında başlat</label>
+                <label>{$t('server.auto_start')}</label>
               </div>
               <label class="toggle-wrapper">
                 <input type="checkbox" bind:checked={serverAutoStart} class="toggle-input" />
@@ -783,8 +695,8 @@
             </div>
             <div class="row">
               <div class="row-info">
-                <label>Sadece yerel ağ (127.0.0.1)</label>
-                <div class="label-desc">Kapalıysa ağdaki diğer cihazlar (telefon) erişebilir.</div>
+                <label>{$t('server.local_only')}</label>
+                <div class="label-desc">{$t('server.local_only_desc')}</div>
               </div>
               <label class="toggle-wrapper">
                 <input type="checkbox" bind:checked={serverLocalOnly} class="toggle-input" />
@@ -798,31 +710,31 @@
       {#if activeTab === 'kisayollar'}
         <div class="tab-content">
           <section class="section">
-            <h3 class="section-title">HYPRLAND KISAYOLLARI</h3>
-            <p class="section-desc">Aşağıdaki satırları <code>hyprland.conf</code> dosyanıza yapıştırarak uygulamayı global kısayollarla yönetebilirsiniz.</p>
+            <h3 class="section-title">{$t('shortcuts.title')}</h3>
+            <p class="section-desc">{@html $t('shortcuts.desc')}</p>
             
             <div class="code-block">
 <pre><code>bind = $mainMod, T, exec, screen-translator --capture
 bind = $mainMod, R, exec, screen-translator --repeat
 bind = $mainMod, I, exec, screen-translator --toggle-interval</code></pre>
             </div>
-            <p class="note">Not: Uygulamanın binary adını değiştirdiyseniz veya PATH'te değilse komutları güncellemeyi unutmayın.</p>
+            <p class="note">{$t('shortcuts.note')}</p>
 
             <div class="shortcuts-list">
               <div class="shortcut-item">
-                <span class="action-name">Bölge seç ve çevir</span>
+                <span class="action-name">{$t('shortcuts.select_translate')}</span>
                 <kbd>$mod + T</kbd>
               </div>
               <div class="shortcut-item">
-                <span class="action-name">Son bölgeyi tekrar çevir</span>
+                <span class="action-name">{$t('shortcuts.repeat_last')}</span>
                 <kbd>$mod + R</kbd>
               </div>
               <div class="shortcut-item">
-                <span class="action-name">Interval modu aç/kapa</span>
+                <span class="action-name">{$t('shortcuts.toggle_interval')}</span>
                 <kbd>$mod + I</kbd>
               </div>
               <div class="shortcut-item">
-                <span class="action-name">Çeviriyi panoya kopyala</span>
+                <span class="action-name">{$t('shortcuts.copy_clipboard')}</span>
                 <kbd>$mod + C</kbd>
               </div>
             </div>
@@ -833,11 +745,11 @@ bind = $mainMod, I, exec, screen-translator --toggle-interval</code></pre>
       {#if activeTab === 'gecmis'}
         <div class="tab-content">
           <section class="section">
-            <h3 class="section-title">GEÇMİŞ AYARLARI</h3>
+            <h3 class="section-title">{$t('history.settings_title')}</h3>
             <div class="row">
               <div class="row-info">
-                <label>Geçmişi kaydet</label>
-                <div class="label-desc">Çeviriler SQLite veritabanına yazılır.</div>
+                <label>{$t('history.save')}</label>
+                <div class="label-desc">{$t('history.save_desc')}</div>
               </div>
               <label class="toggle-wrapper">
                 <input type="checkbox" bind:checked={saveHistory} class="toggle-input" />
@@ -847,16 +759,16 @@ bind = $mainMod, I, exec, screen-translator --toggle-interval</code></pre>
             
             <div class="row">
               <div class="row-info">
-                <label>Maksimum kayıt</label>
-                <div class="label-desc">Aşıldığında en eski kayıtlar silinir.</div>
+                <label>{$t('history.max_records')}</label>
+                <div class="label-desc">{$t('history.max_records_desc')}</div>
               </div>
               <input type="number" bind:value={maxHistory} class="form-input number" />
             </div>
 
             <div class="row">
               <div class="row-info">
-                <label>Önbellekleme</label>
-                <div class="label-desc">Aynı metni tekrar çevirirken API yerine DB'den getirir.</div>
+                <label>{$t('history.cache')}</label>
+                <div class="label-desc">{$t('history.cache_desc')}</div>
               </div>
               <label class="toggle-wrapper">
                 <input type="checkbox" bind:checked={cacheTranslations} class="toggle-input" />
@@ -866,18 +778,18 @@ bind = $mainMod, I, exec, screen-translator --toggle-interval</code></pre>
 
             <div class="row">
               <div class="row-info">
-                <label>Geçmişi temizle</label>
-                <div class="label-desc">Tüm kayıtları veritabanından kalıcı olarak siler.</div>
+                <label>{$t('history.clear')}</label>
+                <div class="label-desc">{$t('history.clear_desc')}</div>
               </div>
-              <button class="btn btn-danger" on:click={clearHistory}>Geçmişi Temizle</button>
+              <button class="btn btn-danger" on:click={clearHistory}>{$t('history.clear_btn')}</button>
             </div>
           </section>
 
           <section class="section">
-            <h3 class="section-title">DIŞA AKTARMA</h3>
+            <h3 class="section-title">{$t('history.export_title')}</h3>
             <div class="row">
               <div class="row-info">
-                <label>Format ve Aktarım</label>
+                <label>{$t('history.export_format')}</label>
               </div>
               <div class="export-actions">
                 <select bind:value={exportFormat} class="form-select w-auto">
@@ -885,7 +797,7 @@ bind = $mainMod, I, exec, screen-translator --toggle-interval</code></pre>
                   <option value="CSV">CSV</option>
                   <option value="TXT">TXT</option>
                 </select>
-                <button class="btn btn-primary" on:click={exportHistory}>Dışa aktar</button>
+                <button class="btn btn-primary" on:click={exportHistory}>{$t('history.export_btn')}</button>
               </div>
             </div>
           </section>
@@ -895,50 +807,65 @@ bind = $mainMod, I, exec, screen-translator --toggle-interval</code></pre>
       {#if activeTab === 'uygulama'}
         <div class="tab-content">
           <section class="section">
-            <h3 class="section-title">GENEL</h3>
-
+            <h3 class="section-title">{$t('app.general_title')}</h3>
 
             <div class="row">
               <div class="row-info">
-                <label>Log seviyesi</label>
+                <label>{$t('app.log_level')}</label>
               </div>
               <select bind:value={logLevel} class="form-select w-auto">
-                <option value="hata">Hata</option>
-                <option value="bilgi">Bilgi</option>
-                <option value="hata_ayiklama">Hata ayıklama (Debug)</option>
+                <option value="hata">{$t('app.log_error')}</option>
+                <option value="bilgi">{$t('app.log_info')}</option>
+                <option value="hata_ayiklama">{$t('app.log_debug')}</option>
+              </select>
+            </div>
+
+            <div class="row">
+              <div class="row-info">
+                <label>{$t('app.ui_lang')}</label>
+                <div class="label-desc">{$t('app.ui_lang_desc')}</div>
+              </div>
+              <select bind:value={appLang} class="form-select w-auto">
+                <option value="en">🇬🇧 English</option>
+                <option value="tr">🇹🇷 Türkçe</option>
+                <option value="de">🇩🇪 Deutsch</option>
+                <option value="es">🇪🇸 Español</option>
+                <option value="ru">🇷🇺 Русский</option>
+                <option value="ja">🇯🇵 日本語</option>
+                <option value="zh">🇨🇳 简体中文</option>
               </select>
             </div>
 
             <div class="row full-col">
               <div class="row-info" style="margin-bottom: 5px;">
-                <label>Config dosyası konumu</label>
-                <div class="label-desc">Değiştirip "Uygula" butonuna basarak config dosyasını taşıyabilirsiniz. Varsayılan için "config.json" yapın.</div>
+                <label>{$t('app.config_path')}</label>
+                <div class="label-desc">{$t('app.config_path_desc')}</div>
               </div>
               <div style="display: flex; gap: 8px;">
                 <input type="text" bind:value={configPath} class="form-input code-font" style="flex: 1;" />
                 <button class="btn btn-primary" on:click={async () => {
                   try {
                     await invoke('set_config_path', { newPath: configPath });
-                    showOverlay("Config yolu güncellendi ve ayarlar buraya kopyalandı!", "BİLGİ", "success");
+                    showOverlay($t('app.config_success'), $t('overlay.info'), "success");
                   } catch (e) {
-                    showOverlay("Config yolu güncellenirken hata oluştu: " + e, "HATA", "error");
+                    showOverlay($t('app.config_error') + e, $t('overlay.error'), "error");
                   }
-                }}>Uygula</button>
+                }}>{$t('app.apply')}</button>
               </div>
             </div>
           </section>
 
           <section class="section">
-            <h3 class="section-title">GÜNCELLEMELER</h3>
+            <h3 class="section-title">{$t('app.updates_title')}</h3>
             <div class="row">
               <div class="row-info">
-                <label>Mevcut sürüm</label>
+                <label>{$t('app.current_version')}</label>
               </div>
               <div class="badge badge-version">v{appVersion}</div>
             </div>
             <div class="row">
               <div class="row-info">
-                <label>{updateAvailable ? `v${updateVersion} mevcut!` : 'Güncellemeleri kontrol et'}</label>
+                <label>{updateAvailable ? $t('app.update_available').replace('{version}', updateVersion) : $t('app.check_updates')}</label>
                 {#if updateAvailable && updateBody}
                   <div class="label-desc">{updateBody}</div>
                 {/if}
@@ -948,13 +875,13 @@ bind = $mainMod, I, exec, screen-translator --toggle-interval</code></pre>
                   updateInstalling = true;
                   try {
                     await invoke('install_update');
-                    showOverlay('Güncelleme indirildi. Uygulama yeniden başlatılacak.', 'GÜNCELLEME', 'success');
+                    showOverlay($t('app.update_downloaded'), $t('overlay.update'), 'success');
                   } catch (e) {
-                    showOverlay('Güncelleme kurulamadı: ' + e, 'HATA', 'error');
+                    showOverlay($t('app.update_failed') + e, $t('overlay.error'), 'error');
                   }
                   updateInstalling = false;
                 }} disabled={updateInstalling}>
-                  {updateInstalling ? 'Kuruluyor...' : 'Güncelle'}
+                  {updateInstalling ? $t('app.installing') : $t('app.update_btn')}
                 </button>
               {:else}
                 <button class="btn btn-primary" on:click={async () => {
@@ -966,14 +893,14 @@ bind = $mainMod, I, exec, screen-translator --toggle-interval</code></pre>
                       updateVersion = info.version;
                       updateBody = info.body;
                     } else {
-                      showOverlay('En güncel sürümü kullanıyorsunuz.', 'BİLGİ', 'success');
+                      showOverlay($t('app.up_to_date'), $t('overlay.info'), 'success');
                     }
                   } catch (e) {
-                    showOverlay('Güncelleme kontrol edilemedi: ' + e, 'HATA', 'error');
+                    showOverlay($t('app.update_check_failed') + e, $t('overlay.error'), 'error');
                   }
                   updateChecking = false;
                 }} disabled={updateChecking}>
-                  {updateChecking ? 'Kontrol ediliyor...' : 'Kontrol Et'}
+                  {updateChecking ? $t('app.checking') : $t('app.check_btn')}
                 </button>
               {/if}
             </div>
@@ -990,7 +917,7 @@ bind = $mainMod, I, exec, screen-translator --toggle-interval</code></pre>
   <div class="overlay-panel type-{overlayType}" on:click|stopPropagation role="presentation">
     <h2 class="overlay-title">{overlayTitle}</h2>
     <p class="overlay-message">{@html overlayMessage}</p>
-    <button class="btn btn-primary" style="margin-top: 15px;" on:click={closeOverlay}>Tamam</button>
+    <button class="btn btn-primary" style="margin-top: 15px;" on:click={closeOverlay}>{$t('common.ok')}</button>
   </div>
 </div>
 {/if}

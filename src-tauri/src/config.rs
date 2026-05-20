@@ -21,11 +21,7 @@ pub struct AppConfig {
     pub pre_contrast: String,
     pub pre_scale: f32,
 
-    pub ocr_engine: String,
-    pub ocr_paddle_path: String,
-    pub ocr_easy_path: String,
-    pub ocr_rapid_path: String,
-    pub ocr_use_gpu: bool,
+
     pub ocr_source_lang: String,
     pub ocr_auto_detect_lang: bool,
     pub ocr_merge_lines: bool,
@@ -43,6 +39,7 @@ pub struct AppConfig {
     pub history_max_records: u32,
 
     pub app_log_level: String,
+    pub app_lang: String,
 }
 
 impl Default for AppConfig {
@@ -63,11 +60,7 @@ impl Default for AppConfig {
             pre_contrast: "kapali".to_string(),
             pre_scale: 1.0,
 
-            ocr_engine: "oar".to_string(),
-            ocr_paddle_path: "".to_string(),
-            ocr_easy_path: "".to_string(),
-            ocr_rapid_path: "".to_string(),
-            ocr_use_gpu: false,
+
             ocr_source_lang: "eng".to_string(),
             ocr_auto_detect_lang: true,
             ocr_merge_lines: true,
@@ -85,6 +78,7 @@ impl Default for AppConfig {
             history_max_records: 1000,
 
             app_log_level: "info".to_string(),
+            app_lang: "en".to_string(),
         }
     }
 }

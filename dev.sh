@@ -12,10 +12,10 @@ unset KITTY_WINDOW_ID 2>/dev/null || true
 
 # --- Node dependencies setup ---
 if [ ! -d "node_modules" ]; then
-    echo "📦 Node paketleri yükleniyor..."
+    echo "📦 Installing Node dependencies..."
     npm install
 fi
 
 # --- Run Tauri in Dev Mode ---
-echo "🚀 Geliştirici sunucusu başlatılıyor (Hot-reload aktif)..."
+echo "🚀 Starting development server (Hot-reload active)..."
 npm run tauri dev

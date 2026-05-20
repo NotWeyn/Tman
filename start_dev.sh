@@ -24,7 +24,7 @@ BINARY="src-tauri/target/debug/tman"
 if [ ! -f "$BINARY" ] || [ "$REBUILD" = true ]; then
     # --- Node dependencies setup ---
     if [ ! -d "node_modules" ]; then
-        echo "📦 Node paketleri yükleniyor..."
+        echo "📦 Installing Node dependencies..."
         npm install >/dev/null 2>&1 || true
     fi
 
@@ -34,7 +34,7 @@ if [ ! -f "$BINARY" ] || [ "$REBUILD" = true ]; then
         2>/dev/null || echo "700")
 
     if command -v zenity &>/dev/null; then
-        echo "🔨 Hata ayıklama (debug) derlemesi başlatılıyor (Bu işlem birkaç dakika sürebilir)..."
+        echo "🔨 Starting debug build (This process may take a few minutes)..."
         (npm run tauri build -- --no-bundle --debug 2>&1 || true) | tee /dev/stderr | {
             COUNT=0
             while IFS= read -r line; do
@@ -45,39 +45,39 @@ if [ ! -f "$BINARY" ] || [ "$REBUILD" = true ]; then
                         [ "$PCT" -gt 99 ] && PCT=99
                         CRATE=$(echo "$line" | sed 's/.*Compiling //' | cut -d' ' -f1)
                         echo "$PCT"
-                        echo "# Derleniyor ($COUNT/$TOTAL): $CRATE"
+                        echo "# Compiling ($COUNT/$TOTAL): $CRATE"
                         ;;
                     *Finished*)
                         echo "100"
-                        echo "# Derleme tamamlandı! ✨"
+                        echo "# Build finished! ✨"
                         ;;
                 esac
             done
         } | zenity --progress \
-            --title="Tman - Hata Ayıklama Derlemesi" \
-            --text="Debug sürümü derleniyor..." \
+            --title="Tman - Debug Build" \
+            --text="Compiling debug release..." \
             --percentage=0 \
             --auto-close \
             --width=500 \
             --no-cancel
     else
-        echo "🔨 Hata ayıklama (debug) derlemesi başlatılıyor ($TOTAL paket)..."
+        echo "🔨 Starting debug build ($TOTAL packages)..."
         if ! npm run tauri build -- --no-bundle --debug; then
-            echo "❌ Hata: Derleme sırasında bir hata oluştu."
+            echo "❌ Error: An error occurred during the build."
             exit 1
         fi
     fi
 else
-    echo "✨ Tman zaten derlenmiş, hata ayıklama moduyla doğrudan başlatılıyor..."
-    echo "💡 Not: Yeniden derlemeye zorlamak için komutu şöyle çalıştırabilirsiniz: ./start_dev.sh -r"
+    echo "✨ Tman is already compiled, starting directly in debug mode..."
+    echo "💡 Note: To force a rebuild, you can run the command as: ./start_dev.sh -r"
 fi
 
 # --- Launch the compiled binary directly (only port 4000, no vite dev server) ---
 if [ ! -f "$BINARY" ]; then
-    echo "❌ Hata: Derleme tamamlanamadı ve/veya iptal edildi."
-    echo "Lütfen internet bağlantınızı kontrol edip ./start_dev.sh -r komutunu çalıştırın."
+    echo "❌ Error: Build could not be completed and/or was cancelled."
+    echo "Please check your internet connection and run ./start_dev.sh -r."
     exit 1
 fi
 
-echo "✨ Tman (Debug) açılıyor..."
+echo "✨ Launching Tman (Debug)..."
 exec "$BINARY"

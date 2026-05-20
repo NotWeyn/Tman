@@ -17,12 +17,19 @@ use tauri::State;
 use tokio::sync::Mutex;
 
 pub struct AppState {
-    pub db: sqlx::SqlitePool,
+    pub db: Mutex<Option<sqlx::SqlitePool>>,
     pub broadcaster: broadcaster::Broadcaster,
     pub config: Mutex<config::AppConfig>,
     pub actual_port: Mutex<u16>,
     pub server_shutdown_tx: Mutex<Option<tokio::sync::oneshot::Sender<()>>>,
     pub last_text: Mutex<Option<String>>,
+    pub last_broadcast: Mutex<Option<String>>,
+    pub http_client: reqwest::Client,
+}
+
+/// Helper: get DB pool from lazy state, returns error if not yet initialized
+async fn get_db(state: &AppState) -> Result<sqlx::SqlitePool, String> {
+    state.db.lock().await.clone().ok_or_else(|| "Veritabanı henüz hazır değil, lütfen birkaç saniye bekleyin.".to_string())
 }
 
 #[tauri::command]
@@ -30,7 +37,10 @@ async fn capture_and_translate(
     app: tauri::AppHandle,
     state: State<'_, Arc<AppState>>,
 ) -> Result<String, String> {
-    // 1. Capture Region
+    let pipeline_start = std::time::Instant::now();
+
+    // 1. Capture Region + Preprocessing
+    let t0 = std::time::Instant::now();
     let cfg = state.config.lock().await.clone();
     let (original_image, processed_image, region) = capture::capture_region(&cfg)?;
 
@@ -43,9 +53,12 @@ async fn capture_and_translate(
     // Encode images for Web UI
     let captured_b64 = crate::utils::dynamic_image_to_base64(&original_image).ok();
     let processed_b64 = crate::utils::dynamic_image_to_base64(&processed_image).ok();
+    let capture_ms = t0.elapsed().as_millis();
 
-    // 2. OCR (Using processed image for better accuracy)
+    // 2. OCR
+    let t1 = std::time::Instant::now();
     let (original_text, detected_lang) = ocr::extract_text(&processed_image, &cfg)?;
+    let ocr_ms = t1.elapsed().as_millis();
 
     if cfg.capture_mode == "degisim" {
         let mut last_text_lock = state.last_text.lock().await;
@@ -58,52 +71,77 @@ async fn capture_and_translate(
     }
 
     // 3. Translation
+    let t2 = std::time::Instant::now();
     let target_lang = cfg.trans_target_lang.clone();
 
     let mut translated_text = String::new();
     let mut from_cache = false;
 
     if cfg.trans_cache_enabled {
-        if let Ok(Some(cached)) =
-            db::get_cached_translation(&state.db, &original_text, &target_lang).await
-        {
-            translated_text = cached;
-            from_cache = true;
+        if let Ok(pool) = get_db(&state).await {
+            if let Ok(Some(cached)) =
+                db::get_cached_translation(&pool, &original_text, &target_lang).await
+            {
+                translated_text = cached;
+                from_cache = true;
+                eprintln!("[cache] HIT: \"{}...\" → {}", &original_text.chars().take(30).collect::<String>(), target_lang);
+            }
         }
     }
 
     if !from_cache {
-        translated_text = translate::translate_text(&original_text, &detected_lang, &cfg).await?;
+        if cfg.trans_cache_enabled {
+            eprintln!("[cache] MISS: \"{}...\" → {}", &original_text.chars().take(30).collect::<String>(), target_lang);
+        }
+        translated_text = translate::translate_text(&original_text, &detected_lang, &cfg, &state.http_client).await?;
         if cfg.history_save {
-            let _ = db::insert_history(
-                &state.db,
-                &original_text,
-                &translated_text,
-                &target_lang,
-                cfg.history_max_records,
-            )
-            .await;
+            if let Ok(pool) = get_db(&state).await {
+                let _ = db::insert_history(
+                    &pool,
+                    &original_text,
+                    &translated_text,
+                    &target_lang,
+                    cfg.history_max_records,
+                )
+                .await;
+            }
         }
     }
 
-    // 4. Broadcast to Web UI (Full event with images)
-    let event = broadcaster::TranslationEvent {
-        original_text: original_text.clone(),
-        translated_text: translated_text.clone(),
-        source_lang: detected_lang,
-        target_lang: target_lang.clone(),
-        region: region.clone(),
-        captured_image: captured_b64,
-        processed_image: processed_b64,
+    // 4. Broadcast to Web UI — debounce: skip if identical to last broadcast
+    let should_broadcast = {
+        let mut last_bc = state.last_broadcast.lock().await;
+        if last_bc.as_deref() == Some(&translated_text) {
+            false
+        } else {
+            *last_bc = Some(translated_text.clone());
+            true
+        }
     };
-    let _ = state.broadcaster.send(event.clone());
 
-    // 5. Emit to Tauri frontend (Lightweight event WITHOUT images to avoid overloading)
-    use tauri::Emitter;
-    let mut tauri_event = event.clone();
-    tauri_event.captured_image = None;
-    tauri_event.processed_image = None;
-    let _ = app.emit("translation-update", tauri_event);
+    if should_broadcast {
+        let event = broadcaster::TranslationEvent {
+            original_text: original_text.clone(),
+            translated_text: translated_text.clone(),
+            source_lang: detected_lang,
+            target_lang: target_lang.clone(),
+            region: region.clone(),
+            captured_image: captured_b64,
+            processed_image: processed_b64,
+        };
+        let _ = state.broadcaster.send(event.clone());
+
+        // 5. Emit to Tauri frontend (Lightweight event WITHOUT images)
+        use tauri::Emitter;
+        let mut tauri_event = event.clone();
+        tauri_event.captured_image = None;
+        tauri_event.processed_image = None;
+        let _ = app.emit("translation-update", tauri_event);
+    }
+
+    let translate_ms = t2.elapsed().as_millis();
+    eprintln!("[perf] capture={}ms ocr={}ms translate={}ms total={}ms", 
+        capture_ms, ocr_ms, translate_ms, pipeline_start.elapsed().as_millis());
 
     Ok(translated_text)
 }
@@ -121,12 +159,14 @@ async fn pick_region(state: State<'_, Arc<AppState>>) -> Result<String, String> 
 async fn get_history(
     state: State<'_, Arc<AppState>>,
 ) -> Result<Vec<db::TranslationHistory>, String> {
-    db::get_history(&state.db).await
+    let pool = get_db(&state).await?;
+    db::get_history(&pool).await
 }
 
 #[tauri::command]
 async fn clear_history(state: State<'_, Arc<AppState>>) -> Result<(), String> {
-    db::clear_history(&state.db).await
+    let pool = get_db(&state).await?;
+    db::clear_history(&pool).await
 }
 
 #[tauri::command]
@@ -134,7 +174,8 @@ async fn export_history_to_file(
     format: String,
     state: State<'_, Arc<AppState>>,
 ) -> Result<String, String> {
-    let history = db::get_history(&state.db).await?;
+    let pool = get_db(&state).await?;
+    let history = db::get_history(&pool).await?;
     let download_dir = dirs::download_dir().ok_or("Cannot find Downloads directory")?;
 
     let mut filename = "tman_history.txt";
@@ -362,76 +403,100 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
-            tauri::async_runtime::block_on(async {
-                // Load Config
-                let app_config = config::load_config();
+            let start = std::time::Instant::now();
 
-                // Set log level from config
-                let log_level = match app_config.app_log_level.as_str() {
-                    "hata" => "error",
-                    "hata_ayiklama" => "debug",
-                    _ => "info", // "bilgi" or any other
-                };
-                std::env::set_var("RUST_LOG", format!("tman={},oar_ocr={}", log_level, log_level));
+            // ── Sync-fast: config load (~1 ms) ──
+            let app_config = config::load_config();
 
-                // Initialize Database
+            // Set log level from config
+            let log_level = match app_config.app_log_level.as_str() {
+                "hata" => "error",
+                "hata_ayiklama" => "debug",
+                _ => "info",
+            };
+            std::env::set_var("RUST_LOG", format!("tman={},oar_ocr={}", log_level, log_level));
+
+            // Initialize Broadcaster (instant — just channel creation)
+            let broadcaster = broadcaster::Broadcaster::new();
+
+            // Create shared HTTP client (reused across all translation calls)
+            let http_client = reqwest::Client::new();
+
+            // Create state with lazy DB (None initially, filled by background task)
+            let state = Arc::new(AppState {
+                db: Mutex::new(None),
+                broadcaster,
+                config: Mutex::new(app_config.clone()),
+                actual_port: Mutex::new(app_config.server_port),
+                server_shutdown_tx: Mutex::new(None),
+                last_text: Mutex::new(None),
+                last_broadcast: Mutex::new(None),
+                http_client,
+            });
+
+            let state_clone = state.clone();
+
+            // ── Heavy init → background task ──
+            tauri::async_runtime::spawn(async move {
+                let bg_start = std::time::Instant::now();
+
+                // Database init
                 let app_dir = dirs::data_local_dir()
                     .unwrap_or_else(|| std::path::PathBuf::from("."))
                     .join("tman");
                 std::fs::create_dir_all(&app_dir).ok();
                 let db_path = app_dir.join("history.db");
-                let db_path_str = db_path.to_string_lossy().to_string();
-                let db_url = format!("sqlite://{}?mode=rwc", db_path_str);
+                let db_url = format!("sqlite://{}?mode=rwc", db_path.to_string_lossy());
 
                 if !db_path.exists() {
-                    std::fs::File::create(&db_path).unwrap();
+                    std::fs::File::create(&db_path).ok();
                 }
 
-                let db = db::init_db(&db_url).await.expect("Failed to init database");
-
-                // Initialize Broadcaster
-                let broadcaster = broadcaster::Broadcaster::new();
-
-                // Start Local Web Server
-                let tx_clone = broadcaster.tx.clone();
-                let mut port = app_config.server_port;
-                let bind_ip = if app_config.server_local_only {
-                    "127.0.0.1"
-                } else {
-                    "0.0.0.0"
-                };
-
-                let listener = loop {
-                    match tokio::net::TcpListener::bind(format!("{}:{}", bind_ip, port)).await {
-                        Ok(l) => break l,
-                        Err(_) => port += 1,
+                match db::init_db(&db_url).await {
+                    Ok(pool) => {
+                        *state_clone.db.lock().await = Some(pool);
+                        eprintln!("[startup] DB ready in {:?}", bg_start.elapsed());
                     }
-                };
+                    Err(e) => {
+                        eprintln!("[startup] DB init failed: {}", e);
+                    }
+                }
 
-                let actual_port = port;
+                // Server init
+                let cfg = state_clone.config.lock().await.clone();
+                if cfg.server_enabled {
+                    let tx_clone = state_clone.broadcaster.tx.clone();
+                    let bind_ip = if cfg.server_local_only { "127.0.0.1" } else { "0.0.0.0" };
+                    let mut port = cfg.server_port;
 
-                let mut server_shutdown_tx = None;
+                    let listener = loop {
+                        match tokio::net::TcpListener::bind(format!("{}:{}", bind_ip, port)).await {
+                            Ok(l) => break l,
+                            Err(_) => {
+                                port += 1;
+                                if port > cfg.server_port + 100 {
+                                    eprintln!("[startup] Could not find free port after 100 attempts");
+                                    return;
+                                }
+                            }
+                        }
+                    };
 
-                if app_config.server_enabled {
+                    *state_clone.actual_port.lock().await = port;
+
                     let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
                     tokio::spawn(async move {
                         server::start_server(listener, tx_clone, shutdown_rx).await;
                     });
-                    server_shutdown_tx = Some(shutdown_tx);
+                    *state_clone.server_shutdown_tx.lock().await = Some(shutdown_tx);
+
+                    eprintln!("[startup] Server ready on port {} in {:?}", port, bg_start.elapsed());
                 }
-
-                // Manage State
-                let state = Arc::new(AppState {
-                    db,
-                    broadcaster,
-                    config: Mutex::new(app_config),
-                    actual_port: Mutex::new(actual_port),
-                    server_shutdown_tx: Mutex::new(server_shutdown_tx),
-                    last_text: Mutex::new(None),
-                });
-
-                app.manage(state);
             });
+
+            eprintln!("[startup] UI ready in {:?} (DB/server loading in background)", start.elapsed());
+
+            app.manage(state);
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -456,3 +521,4 @@ pub fn run() {
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
+
