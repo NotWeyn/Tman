@@ -20,16 +20,10 @@ jobs:
       - name: Install Rust (stable)
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Cache Rust
-        uses: actions/cache@v4
+      - name: Setup Rust Cache
+        uses: swatinem/rust-cache@v2
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            src-tauri/target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
+          workspaces: "src-tauri -> target"
 
       - name: Install Node
         uses: actions/setup-node@v4
@@ -37,7 +31,7 @@ jobs:
           node-version: 22
           cache: 'npm'
 
-      - name: Install Linux system dependencies
+      - name: Install Linux system dependencies & Fast Linker
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -51,12 +45,16 @@ jobs:
             libjavascriptcoregtk-4.1-dev \
             libleptonica-dev \
             libtesseract-dev \
-            clang
+            clang \
+            lld
 
       - name: Install Node dependencies
         run: npm ci
 
       - name: Build production binary (No Bundle)
+        env:
+          RUSTFLAGS: "-C link-arg=-fuse-ld=lld"
+          CARGO_NET_GIT_FETCH_WITH_CLI: true
         run: npm run tauri build -- --no-bundle
 
       - name: Create tar.gz archive
