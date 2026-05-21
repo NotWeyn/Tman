@@ -38,9 +38,11 @@ pub fn dynamic_image_to_base64(image: &image::DynamicImage) -> Result<String, St
     let mut bytes: Vec<u8> = Vec::new();
     let mut cursor = std::io::Cursor::new(&mut bytes);
     
-    image.write_to(&mut cursor, image::ImageFormat::Png)
+    // Convert to RGB8 to ensure it can be encoded as JPEG (JPEG does not support alpha)
+    let rgb_image = image.to_rgb8();
+    image::DynamicImage::ImageRgb8(rgb_image).write_to(&mut cursor, image::ImageFormat::Jpeg)
         .map_err(|e| e.to_string())?;
         
     let b64 = general_purpose::STANDARD.encode(&bytes);
-    Ok(format!("data:image/png;base64,{}", b64))
+    Ok(format!("data:image/jpeg;base64,{}", b64))
 }

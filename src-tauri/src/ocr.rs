@@ -43,9 +43,9 @@ fn extract_text_oar(image: &DynamicImage) -> Result<String, String> {
     use oar_ocr::utils::load_image;
 
     // Save image to temp file (oar-ocr's load_image reads from disk)
-    let temp_path = std::env::temp_dir().join("tman_oar_capture.png");
+    let temp_path = std::env::temp_dir().join("tman_oar_capture.bmp");
     image
-        .save_with_format(&temp_path, image::ImageFormat::Png)
+        .save_with_format(&temp_path, image::ImageFormat::Bmp)
         .map_err(|e| format!("Failed to save temp image: {}", e))?;
 
     let mut guard = OAR_ENGINE
