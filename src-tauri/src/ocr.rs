@@ -7,6 +7,12 @@ use std::sync::Mutex;
 /// Models are auto-downloaded to ~/.oar on first use.
 static OAR_ENGINE: Mutex<Option<oar_ocr::oarocr::OAROCR>> = Mutex::new(None);
 
+pub fn clear_engine() {
+    if let Ok(mut guard) = OAR_ENGINE.lock() {
+        *guard = None;
+    }
+}
+
 pub fn extract_text(image: &DynamicImage, cfg: &AppConfig) -> Result<(String, String), String> {
     let raw_text = extract_text_oar(image)?;
 

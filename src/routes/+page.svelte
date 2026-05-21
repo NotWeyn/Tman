@@ -327,6 +327,8 @@
         clearTimeout(captureIntervalId);
         isCapturingLoop = false;
         captureIntervalId = undefined;
+        // Çeviri durduğunda belleği boşalt
+        invoke('unload_ocr').catch(e => console.error(e));
       } else {
         isCapturingLoop = true;
         let ms = Number(intervalSeconds) * 1000;

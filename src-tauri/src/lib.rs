@@ -410,6 +410,12 @@ async fn install_update(app: tauri::AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+async fn unload_ocr() -> Result<(), String> {
+    crate::ocr::clear_engine();
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -529,7 +535,8 @@ pub fn run() {
             export_history_to_file,
             check_for_update,
             install_update,
-            get_app_version
+            get_app_version,
+            unload_ocr
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
