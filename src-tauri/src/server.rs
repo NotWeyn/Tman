@@ -48,15 +48,16 @@ pub async fn start_server(listener: tokio::net::TcpListener, tx: broadcast::Send
         .layer(cors)
         .with_state(state);
 
-    println!("Web server running on http://{}", listener.local_addr().unwrap());
+    log::debug!("Web server listening on http://{}", listener.local_addr().unwrap());
     if let Err(e) = axum::serve(listener, app)
         .with_graceful_shutdown(async {
             shutdown_rx.await.ok();
         })
         .await 
     {
-        eprintln!("Server error: {}", e);
+        log::error!("Web server fatal error: {}", e);
     }
+    log::info!("Web server shut down gracefully");
 }
 
 async fn ws_handler(
@@ -67,6 +68,7 @@ async fn ws_handler(
 }
 
 async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
+    log::debug!("WebSocket client connected");
     let (mut sender, mut receiver) = socket.split();
     let mut rx = state.tx.subscribe();
 
@@ -74,6 +76,7 @@ async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
         while let Ok(msg) = rx.recv().await {
             if let Ok(json) = serde_json::to_string(&msg) {
                 if sender.send(Message::Text(json.into())).await.is_err() {
+                    log::debug!("WebSocket send failed, client likely disconnected");
                     break;
                 }
             }
@@ -90,4 +93,5 @@ async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
         _ = (&mut send_task) => recv_task.abort(),
         _ = (&mut recv_task) => send_task.abort(),
     };
+    log::debug!("WebSocket client disconnected");
 }

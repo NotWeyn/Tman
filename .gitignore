@@ -33,3 +33,10 @@ Thumbs.db
 memory-bank/
 AGENTS.md
 .agents/
+
+# .graphifyignore
+node_modules/
+dist/
+*.generated.py
+graphify-out/
+

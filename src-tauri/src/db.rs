@@ -12,11 +12,15 @@ pub struct TranslationHistory {
 }
 
 pub async fn init_db(db_url: &str) -> Result<SqlitePool, String> {
+    log::debug!("Connecting to SQLite: {}", db_url);
     let pool = SqlitePoolOptions::new()
         .max_connections(2)
         .connect(db_url)
         .await
-        .map_err(|e| format!("Failed to connect to db: {}", e))?;
+        .map_err(|e| {
+            log::error!("SQLite connection failed: {}", e);
+            format!("Failed to connect to db: {}", e)
+        })?;
 
     sqlx::query(
         "CREATE TABLE IF NOT EXISTS history (
@@ -30,12 +34,17 @@ pub async fn init_db(db_url: &str) -> Result<SqlitePool, String> {
     )
     .execute(&pool)
     .await
-    .map_err(|e| format!("Failed to create table: {}", e))?;
+    .map_err(|e| {
+        log::error!("Failed to create history table: {}", e);
+        format!("Failed to create table: {}", e)
+    })?;
 
+    log::debug!("Database schema verified");
     Ok(pool)
 }
 
 pub async fn insert_history(pool: &SqlitePool, original: &str, translated: &str, target: &str, max_records: u32) -> Result<(), String> {
+    log::debug!("Inserting history record — target='{}', text_len={}", target, original.len());
     sqlx::query(
         "INSERT INTO history (original_text, translated_text, source_lang, target_lang) VALUES (?, ?, ?, ?)"
     )
@@ -45,7 +54,10 @@ pub async fn insert_history(pool: &SqlitePool, original: &str, translated: &str,
     .bind(target)
     .execute(pool)
     .await
-    .map_err(|e| format!("Failed to insert history: {}", e))?;
+    .map_err(|e| {
+        log::error!("Failed to insert history: {}", e);
+        format!("Failed to insert history: {}", e)
+    })?;
 
     if max_records > 0 {
         // Keep only the latest `max_records` rows
@@ -55,7 +67,10 @@ pub async fn insert_history(pool: &SqlitePool, original: &str, translated: &str,
         .bind(max_records)
         .execute(pool)
         .await
-        .map_err(|e| format!("Failed to prune history: {}", e))?;
+        .map_err(|e| {
+            log::error!("Failed to prune history: {}", e);
+            format!("Failed to prune history: {}", e)
+        })?;
     }
 
     Ok(())
@@ -80,15 +95,22 @@ pub async fn get_cached_translation(pool: &SqlitePool, original: &str, target: &
     .bind(target)
     .fetch_optional(pool)
     .await
-    .map_err(|e| format!("Failed to query cache: {}", e))?;
+    .map_err(|e| {
+        log::error!("Cache query failed: {}", e);
+        format!("Failed to query cache: {}", e)
+    })?;
 
     Ok(row.map(|r| r.0))
 }
 
 pub async fn clear_history(pool: &SqlitePool) -> Result<(), String> {
+    log::info!("Clearing all history records");
     sqlx::query("DELETE FROM history")
         .execute(pool)
         .await
-        .map_err(|e| format!("Failed to clear history: {}", e))?;
+        .map_err(|e| {
+            log::error!("Failed to clear history: {}", e);
+            format!("Failed to clear history: {}", e)
+        })?;
     Ok(())
 }

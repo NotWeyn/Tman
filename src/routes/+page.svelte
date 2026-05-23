@@ -55,13 +55,13 @@
 
   // --- STATE VARIABLES ---
   
-  // 1. Yakalama
-  let captureMode = 'manuel'; // manuel, interval, degisim
+  // 1. Capture
+  let captureMode = 'manual'; // manual, interval, change
   let intervalSeconds = 3;
   let changeThreshold = 15;
   let grayscale = false;
   let binarization = false;
-  let contrast = 'kapali';
+  let contrast = 'off';
   let scale = '2x';
   let showInGui = false;
 
@@ -97,7 +97,7 @@
   let maxHistory = 500;
 
   // 7. Uygulama
-  let logLevel = 'bilgi';
+  let logLevel = 'info';
   let appLang = 'en';
 
   // Sync i18n locale when appLang changes
@@ -313,7 +313,7 @@
   async function toggleCaptureLoop() {
     console.log("Çeviri döngüsü tetiklendi");
     
-    if (captureMode === 'manuel') {
+    if (captureMode === 'manual') {
       try {
         await invoke('capture_and_translate');
       } catch (e) {
@@ -357,8 +357,8 @@
   <aside class="sidebar">
     <div class="sidebar-header" style="flex-direction: column; gap: 10px; align-items: stretch;">
       <span class="title text-center">{$t('common.settings')}</span>
-      <button class="btn {captureMode === 'manuel' ? 'btn-primary' : (isCapturingLoop ? 'btn-danger' : 'btn-success')} w-100" on:click={toggleCaptureLoop}>
-        {#if captureMode === 'manuel'}
+      <button class="btn {captureMode === 'manual' ? 'btn-primary' : (isCapturingLoop ? 'btn-danger' : 'btn-success')} w-100" on:click={toggleCaptureLoop}>
+        {#if captureMode === 'manual'}
           {$t('capture.single')}
         {:else}
           {isCapturingLoop ? $t('capture.stop') : $t('capture.start')}
@@ -402,13 +402,13 @@
                 <label>{$t('capture.mode')}</label>
               </div>
               <select bind:value={captureMode} class="form-select w-auto">
-                <option value="manuel">{$t('capture.mode_manual')}</option>
+                <option value="manual">{$t('capture.mode_manual')}</option>
                 <option value="interval">{$t('capture.mode_interval')}</option>
-                <option value="degisim">{$t('capture.mode_change')}</option>
+                <option value="change">{$t('capture.mode_change')}</option>
               </select>
             </div>
 
-            {#if captureMode === 'interval' || captureMode === 'degisim'}
+            {#if captureMode === 'interval' || captureMode === 'change'}
               <div class="row sub-row">
                 <div class="row-info">
                   <label>{$t('capture.interval')}</label>
@@ -453,9 +453,9 @@
                 <label>{$t('preprocessing.contrast')}</label>
               </div>
               <select bind:value={contrast} class="form-select w-auto">
-                <option value="kapali">{$t('preprocessing.contrast_off')}</option>
-                <option value="hafif">{$t('preprocessing.contrast_light')}</option>
-                <option value="guclu">{$t('preprocessing.contrast_strong')}</option>
+                <option value="off">{$t('preprocessing.contrast_off')}</option>
+                <option value="light">{$t('preprocessing.contrast_light')}</option>
+                <option value="strong">{$t('preprocessing.contrast_strong')}</option>
               </select>
             </div>
 
@@ -817,9 +817,9 @@ bind = $mainMod, I, exec, screen-translator --toggle-interval</code></pre>
                 <label>{$t('app.log_level')}</label>
               </div>
               <select bind:value={logLevel} class="form-select w-auto">
-                <option value="hata">{$t('app.log_error')}</option>
-                <option value="bilgi">{$t('app.log_info')}</option>
-                <option value="hata_ayiklama">{$t('app.log_debug')}</option>
+                <option value="error">{$t('app.log_error')}</option>
+                <option value="info">{$t('app.log_info')}</option>
+                <option value="debug">{$t('app.log_debug')}</option>
               </select>
             </div>
 

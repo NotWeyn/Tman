@@ -2,6 +2,7 @@ pub mod broadcaster;
 pub mod capture;
 pub mod config;
 pub mod db;
+pub mod logging;
 pub mod ocr;
 pub mod server;
 pub mod translate;
@@ -29,7 +30,7 @@ pub struct AppState {
 
 /// Helper: get DB pool from lazy state, returns error if not yet initialized
 async fn get_db(state: &AppState) -> Result<sqlx::SqlitePool, String> {
-    state.db.lock().await.clone().ok_or_else(|| "Veritabanı henüz hazır değil, lütfen birkaç saniye bekleyin.".to_string())
+    state.db.lock().await.clone().ok_or_else(|| "Database not ready yet, please wait a few seconds.".to_string())
 }
 
 #[tauri::command]
@@ -38,16 +39,23 @@ async fn capture_and_translate(
     state: State<'_, Arc<AppState>>,
 ) -> Result<String, String> {
     let pipeline_start = std::time::Instant::now();
+    log::info!("──── Translation pipeline started ────");
 
     // 1. Capture Region + Preprocessing
     let t0 = std::time::Instant::now();
     let cfg = state.config.lock().await.clone();
+    log::debug!("Config loaded — provider={}, target_lang={}, cache={}",
+        cfg.trans_provider, cfg.trans_target_lang, cfg.trans_cache_enabled);
+
     let (original_image, processed_image, region) = capture::capture_region(&cfg)?;
+    log::debug!("Screen captured — region='{}', image={}x{}",
+        region, original_image.width(), original_image.height());
 
     if cfg.capture_last_region != region {
         let mut cfg_mut = state.config.lock().await;
         cfg_mut.capture_last_region = region.clone();
         crate::config::save_config(&cfg_mut);
+        log::debug!("Region changed, saved to config");
     }
 
     // Encode images for Web UI concurrently in the background
@@ -60,11 +68,15 @@ async fn capture_and_translate(
     });
 
     let capture_ms = t0.elapsed().as_millis();
+    log::debug!("Capture phase completed in {}ms", capture_ms);
 
     // 2. OCR
     let t1 = std::time::Instant::now();
     let (original_text, detected_lang) = ocr::extract_text(&processed_image, &cfg)?;
     let ocr_ms = t1.elapsed().as_millis();
+    log::debug!("OCR completed in {}ms — detected_lang='{}', text_len={} chars\n  text_preview=\"{}\"",
+        ocr_ms, detected_lang, original_text.len(),
+        &original_text.chars().take(80).collect::<String>());
 
 
 
@@ -82,20 +94,26 @@ async fn capture_and_translate(
             {
                 translated_text = cached;
                 from_cache = true;
-                eprintln!("[cache] HIT: \"{}...\" → {}", &original_text.chars().take(30).collect::<String>(), target_lang);
+                log::debug!("Cache HIT — \"{}...\" → {}",
+                    &original_text.chars().take(40).collect::<String>(), target_lang);
             }
+        } else {
+            log::error!("Cache lookup failed — DB not ready yet");
         }
     }
 
     if !from_cache {
         if cfg.trans_cache_enabled {
-            eprintln!("[cache] MISS: \"{}...\" → {}", &original_text.chars().take(30).collect::<String>(), target_lang);
+            log::debug!("Cache MISS — \"{}...\" → {}",
+                &original_text.chars().take(40).collect::<String>(), target_lang);
         }
+        log::debug!("Calling translation provider '{}' ...", cfg.trans_provider);
         translated_text = translate::translate_text(&original_text, &detected_lang, &cfg, &state.http_client).await?;
+        log::debug!("Translation received — {} chars", translated_text.len());
     }
 
-    // In degisim mode, compare translated text with previous translation
-    if cfg.capture_mode == "degisim" {
+    // In change-detection mode, compare translated text with previous translation
+    if cfg.capture_mode == "change" {
         let mut last_text_lock = state.last_text.lock().await;
         if let Some(last_txt) = last_text_lock.as_ref() {
             if last_txt == &translated_text {
@@ -105,17 +123,22 @@ async fn capture_and_translate(
         *last_text_lock = Some(translated_text.clone());
     }
 
-    // Save to history (only if not from cache and not skipped by degisim)
+    // Save to history (only if not from cache and not skipped by change-detection)
     if !from_cache && cfg.history_save {
         if let Ok(pool) = get_db(&**state).await {
-            let _ = db::insert_history(
+            match db::insert_history(
                 &pool,
                 &original_text,
                 &translated_text,
                 &target_lang,
                 cfg.history_max_records,
             )
-            .await;
+            .await {
+                Ok(_) => log::debug!("History saved successfully"),
+                Err(e) => log::error!("Failed to save history: {}", e),
+            }
+        } else {
+            log::error!("Cannot save history — DB not initialized");
         }
     }
 
@@ -153,8 +176,17 @@ async fn capture_and_translate(
     }
 
     let translate_ms = t2.elapsed().as_millis();
-    eprintln!("[perf] capture={}ms ocr={}ms translate={}ms total={}ms", 
-        capture_ms, ocr_ms, translate_ms, pipeline_start.elapsed().as_millis());
+    let total_ms = pipeline_start.elapsed().as_millis();
+    log::debug!(
+        "──── Pipeline Performance ────\n\
+         ├─ Capture:   {:>5}ms\n\
+         ├─ OCR:       {:>5}ms\n\
+         ├─ Translate: {:>5}ms  (cache={})\n\
+         └─ Total:     {:>5}ms",
+        capture_ms, ocr_ms, translate_ms,
+        if from_cache { "hit" } else { "miss" }, total_ms
+    );
+    log::info!("──── Translation completed in {}ms ────", total_ms);
 
     Ok(translated_text)
 }
@@ -221,7 +253,7 @@ async fn export_history_to_file(
     }
 
     let file_path = download_dir.join(filename);
-    std::fs::write(&file_path, data_str).map_err(|e| format!("Dosya kaydedilemedi: {}", e))?;
+    std::fs::write(&file_path, data_str).map_err(|e| format!("Failed to save file: {}", e))?;
 
     Ok(file_path.to_string_lossy().to_string())
 }
@@ -427,13 +459,10 @@ pub fn run() {
             // ── Sync-fast: config load (~1 ms) ──
             let app_config = config::load_config();
 
-            // Set log level from config
-            let log_level = match app_config.app_log_level.as_str() {
-                "hata" => "error",
-                "hata_ayiklama" => "debug",
-                _ => "info",
-            };
-            std::env::set_var("RUST_LOG", format!("tman={},oar_ocr={}", log_level, log_level));
+            // Initialize structured logging from config
+            logging::init_logging(&app_config.app_log_level);
+            log::info!("Tman v{} starting...", env!("CARGO_PKG_VERSION"));
+            log::debug!("Log level set to '{}'", app_config.app_log_level);
 
             // Initialize Broadcaster (instant — just channel creation)
             let broadcaster = broadcaster::Broadcaster::new();
@@ -474,10 +503,12 @@ pub fn run() {
                 match db::init_db(&db_url).await {
                     Ok(pool) => {
                         *state_clone.db.lock().await = Some(pool);
-                        eprintln!("[startup] DB ready in {:?}", bg_start.elapsed());
+                        log::info!("Database ready ({}ms)", bg_start.elapsed().as_millis());
+                        log::debug!("DB path: {}", db_path.display());
                     }
                     Err(e) => {
-                        eprintln!("[startup] DB init failed: {}", e);
+                        log::error!("Database initialization failed: {}", e);
+                        log::error!("  Attempted DB URL: {}", db_url);
                     }
                 }
 
@@ -487,14 +518,17 @@ pub fn run() {
                     let tx_clone = state_clone.broadcaster.tx.clone();
                     let bind_ip = if cfg.server_local_only { "127.0.0.1" } else { "0.0.0.0" };
                     let mut port = cfg.server_port;
+                    log::debug!("Starting web server on {}:{}", bind_ip, port);
 
                     let listener = loop {
                         match tokio::net::TcpListener::bind(format!("{}:{}", bind_ip, port)).await {
                             Ok(l) => break l,
-                            Err(_) => {
+                            Err(e) => {
+                                log::debug!("Port {} busy ({}), trying next...", port, e);
                                 port += 1;
                                 if port > cfg.server_port + 100 {
-                                    eprintln!("[startup] Could not find free port after 100 attempts");
+                                    log::error!("Could not find free port after 100 attempts ({}–{})",
+                                        cfg.server_port, port);
                                     return;
                                 }
                             }
@@ -509,11 +543,15 @@ pub fn run() {
                     });
                     *state_clone.server_shutdown_tx.lock().await = Some(shutdown_tx);
 
-                    eprintln!("[startup] Server ready on port {} in {:?}", port, bg_start.elapsed());
+                    log::info!("Web server ready on {}:{} ({}ms)",
+                        bind_ip, port, bg_start.elapsed().as_millis());
+                } else {
+                    log::debug!("Web server disabled in config, skipping");
                 }
             });
 
-            eprintln!("[startup] UI ready in {:?} (DB/server loading in background)", start.elapsed());
+            log::info!("UI ready ({}ms) — DB/server loading in background",
+                start.elapsed().as_millis());
 
             app.manage(state);
             Ok(())

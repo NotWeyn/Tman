@@ -1,7 +1,7 @@
+use keyring::Entry;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
-use keyring::Entry;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -20,7 +20,6 @@ pub struct AppConfig {
     pub pre_binarize: bool,
     pub pre_contrast: String,
     pub pre_scale: f32,
-
 
     pub ocr_source_lang: String,
     pub ocr_auto_detect_lang: bool,
@@ -57,9 +56,8 @@ impl Default for AppConfig {
 
             pre_grayscale: false,
             pre_binarize: false,
-            pre_contrast: "kapali".to_string(),
+            pre_contrast: "off".to_string(),
             pre_scale: 1.0,
-
 
             ocr_source_lang: "eng".to_string(),
             ocr_auto_detect_lang: true,
@@ -87,11 +85,11 @@ pub fn get_config_path() -> PathBuf {
     let data_dir = dirs::data_dir()
         .unwrap_or_else(|| std::env::temp_dir())
         .join("tman");
-        
+
     if !data_dir.exists() {
         let _ = fs::create_dir_all(&data_dir);
     }
-    
+
     let pointer_path = data_dir.join("config_pointer.txt");
     if pointer_path.exists() {
         if let Ok(content) = fs::read_to_string(&pointer_path) {
@@ -101,7 +99,7 @@ pub fn get_config_path() -> PathBuf {
             }
         }
     }
-    
+
     data_dir.join("config.json")
 }
 
@@ -109,9 +107,9 @@ pub fn set_config_path_pointer(new_path: &str) {
     let data_dir = dirs::data_dir()
         .unwrap_or_else(|| std::env::temp_dir())
         .join("tman");
-        
+
     let pointer_path = data_dir.join("config_pointer.txt");
-    
+
     if new_path.is_empty() || new_path == "config.json" {
         let _ = fs::remove_file(&pointer_path);
     } else {
@@ -124,19 +122,31 @@ pub fn load_config() -> AppConfig {
     if path.exists() {
         if let Ok(content) = fs::read_to_string(&path) {
             if let Ok(config) = serde_json::from_str(&content) {
+                // Note: logger may not be init yet at startup, these are best-effort
+                log::debug!("Config loaded from {}", path.display());
                 return config;
+            } else {
+                log::error!("Config file corrupted, using defaults: {}", path.display());
             }
+        } else {
+            log::error!("Cannot read config file: {}", path.display());
         }
     }
     let default_config = AppConfig::default();
     save_config(&default_config);
+    log::debug!("Created default config at {}", path.display());
     default_config
 }
 
 pub fn save_config(config: &AppConfig) {
     let path = get_config_path();
     if let Ok(content) = serde_json::to_string_pretty(config) {
-        let _ = fs::write(path, content);
+        match fs::write(&path, content) {
+            Ok(_) => log::debug!("Config saved to {}", path.display()),
+            Err(e) => log::error!("Failed to save config to {}: {}", path.display(), e),
+        }
+    } else {
+        log::error!("Failed to serialize config");
     }
 }
 
@@ -158,7 +168,7 @@ pub fn set_secret(key: &str, secret: &str) {
             let _ = entry.delete_credential();
         } else {
             let _ = entry.set_password(secret); // Actually set_password might still exist, let's keep it or change it?
-            // keyring v3 still has set_password, but just to be safe... wait, the error only said `delete_password` was missing!
+                                                // keyring v3 still has set_password, but just to be safe... wait, the error only said `delete_password` was missing!
         }
     }
 }
