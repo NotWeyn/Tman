@@ -40,3 +40,5 @@ dist/
 *.generated.py
 graphify-out/
 
+todo.md
+
