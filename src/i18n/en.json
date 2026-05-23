@@ -25,7 +25,8 @@
     "single": "Single Translate",
     "capture_btn": "Capture Screen",
     "region_hint": "Last captured region coordinates (editable)",
-    "region_placeholder": "e.g: 1000,300 200x50"
+    "region_placeholder": "e.g: 1000,300 200x50",
+    "select_error": "Region selection cancelled or failed: "
   },
   "preprocessing": {
     "title": "IMAGE PREPROCESSING",
@@ -70,7 +71,8 @@
     "target_lang": "Target language",
     "target_lang_pick": "Pick target language",
     "cache": "Caching",
-    "cache_desc": "Uses DB instead of API for repeated translations."
+    "cache_desc": "Uses DB instead of API for repeated translations.",
+    "failed": "Translation failed: "
   },
   "provider": {
     "openai_title": "LOCAL AI SETTINGS",
@@ -117,6 +119,12 @@
     "clear": "Clear history",
     "clear_desc": "Permanently deletes all records from database.",
     "clear_btn": "Clear History",
+    "clear_confirm": "Are you sure you want to permanently delete all translation history? This action cannot be undone.",
+    "clear_success": "History successfully cleared.",
+    "clear_error": "Failed to clear history: ",
+    "no_records": "No history found to export!",
+    "export_success": "History successfully exported to:<br><br><b>{path}</b>",
+    "export_error": "Failed to export history: ",
     "export_title": "EXPORT",
     "export_format": "Format & Export",
     "export_btn": "Export"
@@ -152,7 +160,8 @@
     "error": "ERROR",
     "info": "INFO",
     "success": "SUCCESS",
-    "update": "UPDATE"
+    "update": "UPDATE",
+    "warning": "WARNING"
   },
   "common": {
     "save": "Save",

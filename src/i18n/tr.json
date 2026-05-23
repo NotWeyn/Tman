@@ -25,7 +25,8 @@
     "single": "Tek Çeviri",
     "capture_btn": "Ekranı Yakala",
     "region_hint": "Son yakalanan bölge koordinatları (Düzenleyebilirsiniz)",
-    "region_placeholder": "Örn: 1000,300 200x50"
+    "region_placeholder": "Örn: 1000,300 200x50",
+    "select_error": "Bölge seçimi iptal edildi veya hata oluştu: "
   },
   "preprocessing": {
     "title": "GÖRÜNTÜ ÖN İŞLEME",
@@ -70,7 +71,8 @@
     "target_lang": "Hedef dil",
     "target_lang_pick": "Hedef dil seçin",
     "cache": "Önbellekleme",
-    "cache_desc": "Aynı metni tekrar çevirirken API yerine DB'den getirir."
+    "cache_desc": "Aynı metni tekrar çevirirken API yerine DB'den getirir.",
+    "failed": "Çeviri başarısız: "
   },
   "provider": {
     "openai_title": "LOCAL Aİ AYARLARI",
@@ -117,6 +119,12 @@
     "clear": "Geçmişi temizle",
     "clear_desc": "Tüm kayıtları veritabanından kalıcı olarak siler.",
     "clear_btn": "Geçmişi Temizle",
+    "clear_confirm": "Tüm çeviri geçmişini silmek istediğinize emin misiniz? Bu işlem geri alınamaz.",
+    "clear_success": "Geçmiş başarıyla temizlendi.",
+    "clear_error": "Geçmiş silinemedi: ",
+    "no_records": "Dışa aktarılacak geçmiş bulunamadı!",
+    "export_success": "Geçmiş başarıyla kaydedildi:<br><br><b>{path}</b>",
+    "export_error": "Dışa aktarılırken hata oluştu: ",
     "export_title": "DIŞA AKTARMA",
     "export_format": "Format ve Aktarım",
     "export_btn": "Dışa aktar"
@@ -152,7 +160,8 @@
     "error": "HATA",
     "info": "BİLGİ",
     "success": "BAŞARILI",
-    "update": "GÜNCELLEME"
+    "update": "GÜNCELLEME",
+    "warning": "UYARI"
   },
   "common": {
     "save": "Kaydet",

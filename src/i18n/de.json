@@ -25,7 +25,8 @@
     "single": "Einzelübersetzung",
     "capture_btn": "Bildschirm erfassen",
     "region_hint": "Koordinaten des zuletzt erfassten Bereichs (bearbeitbar)",
-    "region_placeholder": "z.B. 1000,300 200x50"
+    "region_placeholder": "z.B. 1000,300 200x50",
+    "select_error": "Bereichsauswahl abgebrochen oder fehlgeschlagen: "
   },
   "preprocessing": {
     "title": "BILDVORVERARBEITUNG",
@@ -70,7 +71,8 @@
     "target_lang": "Zielsprache",
     "target_lang_pick": "Zielsprache wählen",
     "cache": "Zwischenspeicherung",
-    "cache_desc": "Verwendet die Datenbank statt der API für wiederholte Übersetzungen."
+    "cache_desc": "Verwendet die Datenbank statt der API für wiederholte Übersetzungen.",
+    "failed": "Übersetzung fehlgeschlagen: "
   },
   "provider": {
     "openai_title": "LOKALE KI-EINSTELLUNGEN",
@@ -117,6 +119,12 @@
     "clear": "Verlauf löschen",
     "clear_desc": "Löscht dauerhaft alle Datensätze aus der Datenbank.",
     "clear_btn": "Verlauf löschen",
+    "clear_confirm": "Sind Sie sicher, dass Sie den gesamten Übersetzungsverlauf dauerhaft löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "clear_success": "Verlauf erfolgreich gelöscht.",
+    "clear_error": "Verlauf konnte nicht gelöscht werden: ",
+    "no_records": "Kein Verlauf zum Exportieren gefunden!",
+    "export_success": "Verlauf erfolgreich exportiert nach:<br><br><b>{path}</b>",
+    "export_error": "Fehler beim Exportieren des Verlaufs: ",
     "export_title": "EXPORTIEREN",
     "export_format": "Format & Export",
     "export_btn": "Exportieren"
@@ -152,7 +160,8 @@
     "error": "FEHLER",
     "info": "INFO",
     "success": "ERFOLG",
-    "update": "UPDATE"
+    "update": "UPDATE",
+    "warning": "WARNUNG"
   },
   "common": {
     "save": "Speichern",

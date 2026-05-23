@@ -25,7 +25,8 @@
     "single": "単発翻訳",
     "capture_btn": "画面をキャプチャ",
     "region_hint": "最後にキャプチャした領域の座標 (編集可能)",
-    "region_placeholder": "例: 1000,300 200x50"
+    "region_placeholder": "例: 1000,300 200x50",
+    "select_error": "範囲選択がキャンセルされたか、失敗しました: "
   },
   "preprocessing": {
     "title": "画像前処理",
@@ -70,7 +71,8 @@
     "target_lang": "翻訳先言語",
     "target_lang_pick": "翻訳先言語を選択",
     "cache": "キャッシュを使用",
-    "cache_desc": "同じ翻訳内容についてはAPIを使わずデータベースから取得します。"
+    "cache_desc": "同じ翻訳内容についてはAPIを使わずデータベースから取得します。",
+    "failed": "翻訳に失敗しました: "
   },
   "provider": {
     "openai_title": "ローカルAI設定",
@@ -117,6 +119,12 @@
     "clear": "履歴を消去する",
     "clear_desc": "データベースからすべてのレコードを完全に削除します。",
     "clear_btn": "履歴を消去",
+    "clear_confirm": "すべての翻訳履歴を完全に削除してもよろしいですか？この操作は取り消せません。",
+    "clear_success": "履歴が正常に消去されました。",
+    "clear_error": "履歴の消去に失敗しました: ",
+    "no_records": "エクスポートする履歴が見つかりません！",
+    "export_success": "履歴が正常にエクスポートされました:<br><br><b>{path}</b>",
+    "export_error": "履歴のエクスポートに失敗しました: ",
     "export_title": "エクスポート",
     "export_format": "形式を指定してエクスポート",
     "export_btn": "エクスポート"
@@ -152,7 +160,8 @@
     "error": "エラー",
     "info": "情報",
     "success": "成功",
-    "update": "アップデート"
+    "update": "アップデート",
+    "warning": "警告"
   },
   "common": {
     "save": "保存",

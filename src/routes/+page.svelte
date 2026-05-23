@@ -267,13 +267,13 @@
   }
 
   async function clearHistory() {
-    if(confirm("Tüm çeviri geçmişini silmek istediğinize emin misiniz? Bu işlem geri alınamaz.")) {
+    if(confirm($t('history.clear_confirm'))) {
       try {
         await invoke('clear_history');
-        showOverlay("Geçmiş başarıyla temizlendi.", "BİLGİ", "success");
+        showOverlay($t('history.clear_success'), $t('overlay.info'), "success");
       } catch (e) {
         console.error("Geçmiş silinemedi:", e);
-        showOverlay("Geçmiş silinemedi: " + e, "HATA", "error");
+        showOverlay($t('history.clear_error') + e, $t('overlay.error'), "error");
       }
     }
   }
@@ -284,15 +284,15 @@
     try {
       const history = await invoke('get_history');
       if (!history || history.length === 0) {
-        showOverlay("Dışa aktarılacak geçmiş bulunamadı!", "UYARI", "warning");
+        showOverlay($t('history.no_records'), $t('overlay.warning'), "warning");
         return;
       }
       
       const savedPath = await invoke('export_history_to_file', { format: exportFormat });
-      showOverlay(`Geçmiş başarıyla kaydedildi:<br><br><b>${savedPath}</b>`, "BAŞARILI", "success");
+      showOverlay($t('history.export_success').replace('{path}', savedPath), $t('overlay.success'), "success");
     } catch (e) {
       console.error("Dışa aktarma hatası:", e);
-      showOverlay("Dışa aktarılırken hata oluştu: " + e, "HATA", "error");
+      showOverlay($t('history.export_error') + e, $t('overlay.error'), "error");
     }
   }
 
@@ -306,7 +306,7 @@
       lastRegion = region;
     } catch (e) {
       console.error("Bölge seçme hatası:", e);
-      showOverlay("Bölge seçimi iptal edildi veya hata oluştu: " + e, "UYARI", "warning");
+      showOverlay($t('capture.select_error') + e, $t('overlay.warning'), "warning");
     }
   }
 
@@ -319,7 +319,7 @@
       } catch (e) {
         if (e !== "No significant text change") {
           console.error("Çeviri hatası:", e);
-          showOverlay("Çeviri başarısız: " + e, "HATA", "error");
+          showOverlay($t('translate.failed') + e, $t('overlay.error'), "error");
         }
       }
     } else {

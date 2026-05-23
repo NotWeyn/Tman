@@ -25,7 +25,8 @@
     "single": "Traducción única",
     "capture_btn": "Capturar pantalla",
     "region_hint": "Coordenadas de la última región capturada (editable)",
-    "region_placeholder": "ej: 1000,300 200x50"
+    "region_placeholder": "ej: 1000,300 200x50",
+    "select_error": "Selección de región cancelada o fallida: "
   },
   "preprocessing": {
     "title": "PREPROCESAMIENTO DE IMAGEN",
@@ -70,7 +71,8 @@
     "target_lang": "Idioma de destino",
     "target_lang_pick": "Seleccionar idioma de destino",
     "cache": "Caché",
-    "cache_desc": "Usa la base de datos en lugar de la API para traducciones repetidas."
+    "cache_desc": "Usa la base de datos en lugar de la API para traducciones repetidas.",
+    "failed": "Traducción fallida: "
   },
   "provider": {
     "openai_title": "AJUSTES DE IA LOCAL",
@@ -117,6 +119,12 @@
     "clear": "Limpiar historial",
     "clear_desc": "Elimina permanentemente todos los registros de la base de datos.",
     "clear_btn": "Limpiar historial",
+    "clear_confirm": "¿Está seguro de que desea eliminar permanentemente todo el historial de traducción? Esta acción no se puede deshacer.",
+    "clear_success": "Historial borrado con éxito.",
+    "clear_error": "Error al borrar el historial: ",
+    "no_records": "¡No se encontró historial para exportar!",
+    "export_success": "Historial exportado con éxito a:<br><br><b>{path}</b>",
+    "export_error": "Error al exportar el historial: ",
     "export_title": "EXPORTAR",
     "export_format": "Formato y exportación",
     "export_btn": "Exportar"
@@ -152,7 +160,8 @@
     "error": "ERROR",
     "info": "INFORMACIÓN",
     "success": "ÉXITO",
-    "update": "ACTUALIZAR"
+    "update": "ACTUALIZAR",
+    "warning": "ADVERTENCIA"
   },
   "common": {
     "save": "Guardar",
