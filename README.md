@@ -156,20 +156,20 @@ The compiled binary is at `src-tauri/target/release/tman`.
 ### High-Level Overview
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    Tauri Desktop App                        │
-│  ┌──────────────────┐          ┌──────────────────────────┐ │
-│  │  Svelte Frontend │◄─IPC──►│      Rust Backend        │ │
-│  │  (SvelteKit)     │         │                          │ │
-│  │  • Main UI       │         │  capture.rs  → grim/slurp│ │
-│  │  • Settings      │         │  ocr.rs      → oar-ocr   │ │
-│  │  • History       │         │  translate.rs→ API calls  │ │
-│  │  • i18n system   │         │  db.rs       → SQLite     │ │
-│  │  • LanguagePicker│         │  server.rs   → Axum WS    │ │
-│  └──────────────────┘         │  config.rs   → JSON+keyring│
-│                                │  broadcaster.rs → events  │ │
-│                                └──────────────────────────┘ │
-└─────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────┐
+│                    Tauri Desktop App                           │
+│  ┌──────────────────┐          ┌─────────────────────────────┐ │
+│  │  Svelte Frontend │ ◄─IPC──► │      Rust Backend           │ │
+│  │  (SvelteKit)     │          │                             │ │
+│  │  • Main UI       │          │  capture.rs  → grim/slurp   │ │
+│  │  • Settings      │          │  ocr.rs      → oar-ocr      │ │
+│  │  • History       │          │  translate.rs→ API calls    │ │
+│  │  • i18n system   │          │  db.rs       → SQLite       │ │
+│  │  • LanguagePicker│          │  server.rs   → Axum WS      │ │
+│  └──────────────────┘          │  config.rs   → JSON+keyring │ │
+│                                │  broadcaster.rs → events    │ │
+│                                └─────────────────────────────┘ │
+└────────────────────────────────────────────────────────────────┘
                                          │
                                     WebSocket
                                          │
