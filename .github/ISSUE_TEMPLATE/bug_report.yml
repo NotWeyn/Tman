@@ -1,0 +1,66 @@
+name: Bug Report
+description: Create a report to help us improve Tman
+title: "[BUG] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+  - type: input
+    id: os
+    attributes:
+      label: OS / Distribution
+      description: What operating system and version are you using? (e.g., Arch Linux 6.8.2, Ubuntu 24.04)
+      placeholder: ex. Arch Linux 6.8.2
+    validations:
+      required: true
+  - type: input
+    id: wm
+    attributes:
+      label: Window Manager / Compositor
+      description: What Window Manager or Wayland compositor are you using? (e.g., Hyprland, Sway, KDE Plasma)
+      placeholder: ex. Hyprland 0.40.0
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Tman Version
+      description: What version of Tman are you using? (You can find this in the App tab)
+      placeholder: ex. v0.1.1
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: How can we reproduce this bug?
+      placeholder: |
+        1. Select region
+        2. Click translate
+        3. Error appears...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened?
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Application Logs
+      description: Please provide the debug logs. You can get these by setting Log Level to 'Debug' in the App tab, running `npm run tauri dev` or running the App via terminal and reproducing the issue.
+      render: shell
+    validations:
+      required: false
