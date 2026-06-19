@@ -22,6 +22,7 @@ impl Broadcaster {
         Self { tx }
     }
 
+    #[allow(clippy::result_large_err)]
     pub fn send(
         &self,
         event: TranslationEvent,

@@ -81,7 +81,7 @@ impl Default for AppConfig {
 
 pub fn get_config_path() -> PathBuf {
     let data_dir = dirs::data_dir()
-        .unwrap_or_else(|| std::env::temp_dir())
+        .unwrap_or_else(std::env::temp_dir)
         .join("tman");
 
     if !data_dir.exists() {
@@ -103,7 +103,7 @@ pub fn get_config_path() -> PathBuf {
 
 pub fn set_config_path_pointer(new_path: &str) {
     let data_dir = dirs::data_dir()
-        .unwrap_or_else(|| std::env::temp_dir())
+        .unwrap_or_else(std::env::temp_dir)
         .join("tman");
 
     let pointer_path = data_dir.join("config_pointer.txt");

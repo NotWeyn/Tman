@@ -197,7 +197,7 @@ async fn translate_deepl(
 
     if let Some(translations) = res_json.get("translations").and_then(|t| t.as_array()) {
         if let Some(trans) = translations
-            .get(0)
+            .first()
             .and_then(|t| t.get("text"))
             .and_then(|t| t.as_str())
         {

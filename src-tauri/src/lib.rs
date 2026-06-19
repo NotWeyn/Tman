@@ -103,7 +103,7 @@ async fn capture_and_translate(
     let mut from_cache = false;
 
     if cfg.trans_cache_enabled {
-        if let Ok(pool) = get_db(&**state).await {
+        if let Ok(pool) = get_db(&state).await {
             if let Ok(Some(cached)) =
                 db::get_cached_translation(&pool, &original_text, &target_lang).await
             {
@@ -148,7 +148,7 @@ async fn capture_and_translate(
 
     // Save to history (only if not from cache and not skipped by change-detection)
     if !from_cache && cfg.history_save {
-        if let Ok(pool) = get_db(&**state).await {
+        if let Ok(pool) = get_db(&state).await {
             match db::insert_history(
                 &pool,
                 &original_text,
@@ -231,13 +231,13 @@ async fn pick_region(state: State<'_, Arc<AppState>>) -> Result<String, String> 
 async fn get_history(
     state: State<'_, Arc<AppState>>,
 ) -> Result<Vec<db::TranslationHistory>, String> {
-    let pool = get_db(&**state).await?;
+    let pool = get_db(&state).await?;
     db::get_history(&pool).await
 }
 
 #[tauri::command]
 async fn clear_history(state: State<'_, Arc<AppState>>) -> Result<(), String> {
-    let pool = get_db(&**state).await?;
+    let pool = get_db(&state).await?;
     db::clear_history(&pool).await
 }
 
@@ -246,7 +246,7 @@ async fn export_history_to_file(
     format: String,
     state: State<'_, Arc<AppState>>,
 ) -> Result<String, String> {
-    let pool = get_db(&**state).await?;
+    let pool = get_db(&state).await?;
     let history = db::get_history(&pool).await?;
     let download_dir = dirs::download_dir().ok_or("Cannot find Downloads directory")?;
 
