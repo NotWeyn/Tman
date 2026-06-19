@@ -1,21 +1,28 @@
+use crate::broadcaster::TranslationEvent;
 use axum::{
-    extract::{ws::{Message, WebSocket, WebSocketUpgrade}, State},
+    extract::{
+        ws::{Message, WebSocket, WebSocketUpgrade},
+        State,
+    },
     response::IntoResponse,
     routing::get,
     Router,
 };
-use tower_http::services::ServeDir;
-use tower_http::cors::{CorsLayer, Any};
+use futures_util::{sink::SinkExt, stream::StreamExt};
 use std::sync::Arc;
 use tokio::sync::broadcast;
-use crate::broadcaster::TranslationEvent;
-use futures_util::{sink::SinkExt, stream::StreamExt};
+use tower_http::cors::{Any, CorsLayer};
+use tower_http::services::ServeDir;
 
 pub struct AppState {
     pub tx: broadcast::Sender<TranslationEvent>,
 }
 
-pub async fn start_server(listener: tokio::net::TcpListener, tx: broadcast::Sender<TranslationEvent>, shutdown_rx: tokio::sync::oneshot::Receiver<()>) {
+pub async fn start_server(
+    listener: tokio::net::TcpListener,
+    tx: broadcast::Sender<TranslationEvent>,
+    shutdown_rx: tokio::sync::oneshot::Receiver<()>,
+) {
     let state = Arc::new(AppState { tx });
 
     let cors = CorsLayer::new()
@@ -28,13 +35,18 @@ pub async fn start_server(listener: tokio::net::TcpListener, tx: broadcast::Send
         "web-ui".to_string()
     } else if let Ok(exe) = std::env::current_exe() {
         // Binary is in src-tauri/target/debug/, web-ui is at project root
-        let project_root = exe.parent()
+        let project_root = exe
+            .parent()
             .and_then(|p| p.parent())
             .and_then(|p| p.parent())
             .and_then(|p| p.parent());
         if let Some(root) = project_root {
             let p = root.join("web-ui");
-            if p.exists() { p.to_string_lossy().to_string() } else { "web-ui".to_string() }
+            if p.exists() {
+                p.to_string_lossy().to_string()
+            } else {
+                "web-ui".to_string()
+            }
         } else {
             "web-ui".to_string()
         }
@@ -48,22 +60,22 @@ pub async fn start_server(listener: tokio::net::TcpListener, tx: broadcast::Send
         .layer(cors)
         .with_state(state);
 
-    log::debug!("Web server listening on http://{}", listener.local_addr().unwrap());
+    log::debug!(
+        "Web server listening on http://{}",
+        listener.local_addr().unwrap()
+    );
     if let Err(e) = axum::serve(listener, app)
         .with_graceful_shutdown(async {
             shutdown_rx.await.ok();
         })
-        .await 
+        .await
     {
         log::error!("Web server fatal error: {}", e);
     }
     log::info!("Web server shut down gracefully");
 }
 
-async fn ws_handler(
-    ws: WebSocketUpgrade,
-    State(state): State<Arc<AppState>>,
-) -> impl IntoResponse {
+async fn ws_handler(ws: WebSocketUpgrade, State(state): State<Arc<AppState>>) -> impl IntoResponse {
     ws.on_upgrade(|socket| handle_socket(socket, state))
 }
 

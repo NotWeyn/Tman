@@ -30,7 +30,12 @@ pub struct AppState {
 
 /// Helper: get DB pool from lazy state, returns error if not yet initialized
 async fn get_db(state: &AppState) -> Result<sqlx::SqlitePool, String> {
-    state.db.lock().await.clone().ok_or_else(|| "Database not ready yet, please wait a few seconds.".to_string())
+    state
+        .db
+        .lock()
+        .await
+        .clone()
+        .ok_or_else(|| "Database not ready yet, please wait a few seconds.".to_string())
 }
 
 #[tauri::command]
@@ -44,12 +49,20 @@ async fn capture_and_translate(
     // 1. Capture Region + Preprocessing
     let t0 = std::time::Instant::now();
     let cfg = state.config.lock().await.clone();
-    log::debug!("Config loaded — provider={}, target_lang={}, cache={}",
-        cfg.trans_provider, cfg.trans_target_lang, cfg.trans_cache_enabled);
+    log::debug!(
+        "Config loaded — provider={}, target_lang={}, cache={}",
+        cfg.trans_provider,
+        cfg.trans_target_lang,
+        cfg.trans_cache_enabled
+    );
 
     let (original_image, processed_image, region) = capture::capture_region(&cfg)?;
-    log::debug!("Screen captured — region='{}', image={}x{}",
-        region, original_image.width(), original_image.height());
+    log::debug!(
+        "Screen captured — region='{}', image={}x{}",
+        region,
+        original_image.width(),
+        original_image.height()
+    );
 
     if cfg.capture_last_region != region {
         let mut cfg_mut = state.config.lock().await;
@@ -74,11 +87,13 @@ async fn capture_and_translate(
     let t1 = std::time::Instant::now();
     let (original_text, detected_lang) = ocr::extract_text(&processed_image, &cfg)?;
     let ocr_ms = t1.elapsed().as_millis();
-    log::debug!("OCR completed in {}ms — detected_lang='{}', text_len={} chars\n  text_preview=\"{}\"",
-        ocr_ms, detected_lang, original_text.len(),
-        &original_text.chars().take(80).collect::<String>());
-
-
+    log::debug!(
+        "OCR completed in {}ms — detected_lang='{}', text_len={} chars\n  text_preview=\"{}\"",
+        ocr_ms,
+        detected_lang,
+        original_text.len(),
+        &original_text.chars().take(80).collect::<String>()
+    );
 
     // 3. Translation
     let t2 = std::time::Instant::now();
@@ -94,8 +109,11 @@ async fn capture_and_translate(
             {
                 translated_text = cached;
                 from_cache = true;
-                log::debug!("Cache HIT — \"{}...\" → {}",
-                    &original_text.chars().take(40).collect::<String>(), target_lang);
+                log::debug!(
+                    "Cache HIT — \"{}...\" → {}",
+                    &original_text.chars().take(40).collect::<String>(),
+                    target_lang
+                );
             }
         } else {
             log::error!("Cache lookup failed — DB not ready yet");
@@ -104,11 +122,16 @@ async fn capture_and_translate(
 
     if !from_cache {
         if cfg.trans_cache_enabled {
-            log::debug!("Cache MISS — \"{}...\" → {}",
-                &original_text.chars().take(40).collect::<String>(), target_lang);
+            log::debug!(
+                "Cache MISS — \"{}...\" → {}",
+                &original_text.chars().take(40).collect::<String>(),
+                target_lang
+            );
         }
         log::debug!("Calling translation provider '{}' ...", cfg.trans_provider);
-        translated_text = translate::translate_text(&original_text, &detected_lang, &cfg, &state.http_client).await?;
+        translated_text =
+            translate::translate_text(&original_text, &detected_lang, &cfg, &state.http_client)
+                .await?;
         log::debug!("Translation received — {} chars", translated_text.len());
     }
 
@@ -133,7 +156,8 @@ async fn capture_and_translate(
                 &target_lang,
                 cfg.history_max_records,
             )
-            .await {
+            .await
+            {
                 Ok(_) => log::debug!("History saved successfully"),
                 Err(e) => log::error!("Failed to save history: {}", e),
             }
@@ -183,8 +207,11 @@ async fn capture_and_translate(
          ├─ OCR:       {:>5}ms\n\
          ├─ Translate: {:>5}ms  (cache={})\n\
          └─ Total:     {:>5}ms",
-        capture_ms, ocr_ms, translate_ms,
-        if from_cache { "hit" } else { "miss" }, total_ms
+        capture_ms,
+        ocr_ms,
+        translate_ms,
+        if from_cache { "hit" } else { "miss" },
+        total_ms
     );
     log::info!("──── Translation completed in {}ms ────", total_ms);
 
@@ -414,7 +441,9 @@ struct UpdateInfo {
 #[tauri::command]
 async fn check_for_update(app: tauri::AppHandle) -> Result<UpdateInfo, String> {
     use tauri_plugin_updater::UpdaterExt;
-    let updater = app.updater().map_err(|e| format!("Updater init failed: {}", e))?;
+    let updater = app
+        .updater()
+        .map_err(|e| format!("Updater init failed: {}", e))?;
     match updater.check().await {
         Ok(Some(update)) => Ok(UpdateInfo {
             available: true,
@@ -433,11 +462,17 @@ async fn check_for_update(app: tauri::AppHandle) -> Result<UpdateInfo, String> {
 #[tauri::command]
 async fn install_update(app: tauri::AppHandle) -> Result<(), String> {
     use tauri_plugin_updater::UpdaterExt;
-    let updater = app.updater().map_err(|e| format!("Updater init failed: {}", e))?;
-    let update = updater.check().await
+    let updater = app
+        .updater()
+        .map_err(|e| format!("Updater init failed: {}", e))?;
+    let update = updater
+        .check()
+        .await
         .map_err(|e| format!("Update check failed: {}", e))?
         .ok_or("No update available".to_string())?;
-    update.download_and_install(|_, _| {}, || {}).await
+    update
+        .download_and_install(|_, _| {}, || {})
+        .await
         .map_err(|e| format!("Update install failed: {}", e))?;
     Ok(())
 }
@@ -516,7 +551,11 @@ pub fn run() {
                 let cfg = state_clone.config.lock().await.clone();
                 if cfg.server_enabled {
                     let tx_clone = state_clone.broadcaster.tx.clone();
-                    let bind_ip = if cfg.server_local_only { "127.0.0.1" } else { "0.0.0.0" };
+                    let bind_ip = if cfg.server_local_only {
+                        "127.0.0.1"
+                    } else {
+                        "0.0.0.0"
+                    };
                     let mut port = cfg.server_port;
                     log::debug!("Starting web server on {}:{}", bind_ip, port);
 
@@ -527,8 +566,11 @@ pub fn run() {
                                 log::debug!("Port {} busy ({}), trying next...", port, e);
                                 port += 1;
                                 if port > cfg.server_port + 100 {
-                                    log::error!("Could not find free port after 100 attempts ({}–{})",
-                                        cfg.server_port, port);
+                                    log::error!(
+                                        "Could not find free port after 100 attempts ({}–{})",
+                                        cfg.server_port,
+                                        port
+                                    );
                                     return;
                                 }
                             }
@@ -543,15 +585,21 @@ pub fn run() {
                     });
                     *state_clone.server_shutdown_tx.lock().await = Some(shutdown_tx);
 
-                    log::info!("Web server ready on {}:{} ({}ms)",
-                        bind_ip, port, bg_start.elapsed().as_millis());
+                    log::info!(
+                        "Web server ready on {}:{} ({}ms)",
+                        bind_ip,
+                        port,
+                        bg_start.elapsed().as_millis()
+                    );
                 } else {
                     log::debug!("Web server disabled in config, skipping");
                 }
             });
 
-            log::info!("UI ready ({}ms) — DB/server loading in background",
-                start.elapsed().as_millis());
+            log::info!(
+                "UI ready ({}ms) — DB/server loading in background",
+                start.elapsed().as_millis()
+            );
 
             app.manage(state);
             Ok(())
@@ -579,4 +627,3 @@ pub fn run() {
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
-

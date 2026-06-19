@@ -19,8 +19,11 @@ pub fn extract_text(image: &DynamicImage, cfg: &AppConfig) -> Result<(String, St
 
     let char_count = raw_text.chars().filter(|c| !c.is_whitespace()).count();
     if char_count < cfg.ocr_min_chars as usize {
-        log::debug!("OCR text too short ({} chars < threshold {}), skipping",
-            char_count, cfg.ocr_min_chars);
+        log::debug!(
+            "OCR text too short ({} chars < threshold {}), skipping",
+            char_count,
+            cfg.ocr_min_chars
+        );
         return Err(format!(
             "Text length {} below threshold {}",
             char_count, cfg.ocr_min_chars
@@ -43,7 +46,10 @@ pub fn extract_text(image: &DynamicImage, cfg: &AppConfig) -> Result<(String, St
         log::debug!("Language auto-detected: '{}'", lang_str);
         lang_str
     } else {
-        log::debug!("Using configured source language: '{}'", cfg.ocr_source_lang);
+        log::debug!(
+            "Using configured source language: '{}'",
+            cfg.ocr_source_lang
+        );
         cfg.ocr_source_lang.clone()
     };
 
@@ -65,12 +71,10 @@ fn extract_text_oar(image: &DynamicImage) -> Result<String, String> {
             format!("Failed to save temp image: {}", e)
         })?;
 
-    let mut guard = OAR_ENGINE
-        .lock()
-        .map_err(|e| {
-            log::error!("OCR engine lock poisoned: {}", e);
-            format!("OAR engine lock poisoned: {}", e)
-        })?;
+    let mut guard = OAR_ENGINE.lock().map_err(|e| {
+        log::error!("OCR engine lock poisoned: {}", e);
+        format!("OAR engine lock poisoned: {}", e)
+    })?;
 
     // Initialize engine on first use
     if guard.is_none() {
@@ -91,18 +95,15 @@ fn extract_text_oar(image: &DynamicImage) -> Result<String, String> {
 
     let ocr = guard.as_ref().unwrap();
 
-    let oar_image = load_image(&temp_path)
-        .map_err(|e| {
-            log::error!("Failed to load image for OCR processing: {}", e);
-            format!("Failed to load image for OAR: {}", e)
-        })?;
+    let oar_image = load_image(&temp_path).map_err(|e| {
+        log::error!("Failed to load image for OCR processing: {}", e);
+        format!("Failed to load image for OAR: {}", e)
+    })?;
 
-    let results = ocr
-        .predict(vec![oar_image])
-        .map_err(|e| {
-            log::error!("OCR prediction failed: {}", e);
-            format!("OAR-OCR prediction failed: {}", e)
-        })?;
+    let results = ocr.predict(vec![oar_image]).map_err(|e| {
+        log::error!("OCR prediction failed: {}", e);
+        format!("OAR-OCR prediction failed: {}", e)
+    })?;
 
     let mut text_parts = Vec::new();
     if let Some(result) = results.first() {
@@ -116,4 +117,3 @@ fn extract_text_oar(image: &DynamicImage) -> Result<String, String> {
 
     Ok(text_parts.join("\n"))
 }
-

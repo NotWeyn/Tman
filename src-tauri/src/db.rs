@@ -1,5 +1,5 @@
+use serde::{Deserialize, Serialize};
 use sqlx::{sqlite::SqlitePoolOptions, SqlitePool};
-use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize, sqlx::FromRow)]
 pub struct TranslationHistory {
@@ -30,7 +30,7 @@ pub async fn init_db(db_url: &str) -> Result<SqlitePool, String> {
             source_lang TEXT NOT NULL,
             target_lang TEXT NOT NULL,
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-        );"
+        );",
     )
     .execute(&pool)
     .await
@@ -43,8 +43,18 @@ pub async fn init_db(db_url: &str) -> Result<SqlitePool, String> {
     Ok(pool)
 }
 
-pub async fn insert_history(pool: &SqlitePool, original: &str, translated: &str, target: &str, max_records: u32) -> Result<(), String> {
-    log::debug!("Inserting history record — target='{}', text_len={}", target, original.len());
+pub async fn insert_history(
+    pool: &SqlitePool,
+    original: &str,
+    translated: &str,
+    target: &str,
+    max_records: u32,
+) -> Result<(), String> {
+    log::debug!(
+        "Inserting history record — target='{}', text_len={}",
+        target,
+        original.len()
+    );
     sqlx::query(
         "INSERT INTO history (original_text, translated_text, source_lang, target_lang) VALUES (?, ?, ?, ?)"
     )
@@ -78,7 +88,7 @@ pub async fn insert_history(pool: &SqlitePool, original: &str, translated: &str,
 
 pub async fn get_history(pool: &SqlitePool) -> Result<Vec<TranslationHistory>, String> {
     let history = sqlx::query_as::<_, TranslationHistory>(
-        "SELECT * FROM history ORDER BY timestamp DESC LIMIT 50"
+        "SELECT * FROM history ORDER BY timestamp DESC LIMIT 50",
     )
     .fetch_all(pool)
     .await
@@ -87,7 +97,11 @@ pub async fn get_history(pool: &SqlitePool) -> Result<Vec<TranslationHistory>, S
     Ok(history)
 }
 
-pub async fn get_cached_translation(pool: &SqlitePool, original: &str, target: &str) -> Result<Option<String>, String> {
+pub async fn get_cached_translation(
+    pool: &SqlitePool,
+    original: &str,
+    target: &str,
+) -> Result<Option<String>, String> {
     let row: Option<(String,)> = sqlx::query_as(
         "SELECT translated_text FROM history WHERE original_text = ? AND target_lang = ? ORDER BY timestamp DESC LIMIT 1"
     )

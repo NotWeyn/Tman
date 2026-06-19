@@ -50,7 +50,7 @@ jobs:
           
           latest_json = {
               'version': version_semver,
-              'notes': f'Tman {tag_name} sürümü yayınlandı. Yeni güncellemeyi almak için lütfen projeyi manuel olarak tekrar indirin ve start.sh ile çalıştırın.',
+              'notes': f'Tman {tag_name} ',
               'pub_date': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
               'platforms': {
                   'linux-x86_64': {
@@ -72,7 +72,7 @@ jobs:
         run: |
           gh release create "${{ github.ref_name }}" \
             --title "Tman ${{ github.ref_name }}" \
-            --notes "Tman ${{ github.ref_name }} sürümü yayınlandı. Bu sürümde otomatik güncelleme indirmesi devre dışı bırakılmıştır. Lütfen projeyi manuel olarak güncelleyin." \
+            --notes "Tman ${{ github.ref_name }} " \
             --draft=false \
             --prerelease=false \
             latest.json

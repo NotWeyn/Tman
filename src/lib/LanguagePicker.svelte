@@ -1,25 +1,21 @@
-<script>
+<script lang="ts">
   import { languages, targetLanguages, getFlag } from '$lib/languages';
   import { createEventDispatcher } from 'svelte';
   import { t } from '$lib/i18n';
 
-  /** @type {string} */
-  export let value = '';
-  /** @type {boolean} */
-  export let showAuto = false;
-  /** @type {string} */
-  export let label = 'Dil seçin';
+  export let value: string = '';
+  export let showAuto: boolean = false;
+  export let label: string = 'Dil seçin';
 
   const dispatch = createEventDispatcher();
 
   let isOpen = false;
   let search = '';
-  /** @type {HTMLElement|null} */
-  let container = null;
+  let container: HTMLElement | null = null;
 
   $: langList = showAuto ? languages : targetLanguages;
   
-  $: getDisplayName = (lang) => {
+  $: getDisplayName = (lang: any) => {
     if (!lang) return value;
     if (lang.code === 'auto') return $t('common.auto', 'Auto');
     return lang.name;
@@ -34,7 +30,7 @@
   $: currentFlag = getFlag(value);
   $: currentLang = langList.find(l => l.code === value);
 
-  function select(code) {
+  function select(code: string) {
     value = code;
     isOpen = false;
     search = '';
@@ -47,20 +43,20 @@
       search = '';
       // Focus search input after DOM update
       setTimeout(() => {
-        const input = container?.querySelector('.lp-search');
+        const input = container?.querySelector('.lp-search') as HTMLElement | null;
         if (input) input.focus();
       }, 50);
     }
   }
 
-  function handleClickOutside(e) {
-    if (container && !container.contains(e.target)) {
+  function handleClickOutside(e: MouseEvent) {
+    if (container && !container.contains(e.target as Node)) {
       isOpen = false;
       search = '';
     }
   }
 
-  function handleKeydown(e) {
+  function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape') {
       isOpen = false;
       search = '';

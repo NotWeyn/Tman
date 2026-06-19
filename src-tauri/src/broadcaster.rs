@@ -1,5 +1,5 @@
+use serde::{Deserialize, Serialize};
 use tokio::sync::broadcast;
-use serde::{Serialize, Deserialize};
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct TranslationEvent {
@@ -8,7 +8,7 @@ pub struct TranslationEvent {
     pub source_lang: String,
     pub target_lang: String,
     pub region: String,
-    pub captured_image: Option<String>, // Base64
+    pub captured_image: Option<String>,  // Base64
     pub processed_image: Option<String>, // Base64
 }
 
@@ -22,7 +22,10 @@ impl Broadcaster {
         Self { tx }
     }
 
-    pub fn send(&self, event: TranslationEvent) -> Result<usize, broadcast::error::SendError<TranslationEvent>> {
+    pub fn send(
+        &self,
+        event: TranslationEvent,
+    ) -> Result<usize, broadcast::error::SendError<TranslationEvent>> {
         self.tx.send(event)
     }
 
