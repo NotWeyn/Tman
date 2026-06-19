@@ -31,10 +31,7 @@
   "preprocessing": {
     "title": "BILDVORVERARBEITUNG",
     "grayscale": "Graustufen",
-    "grayscale_desc": "Konvertiert das Bild in Schwarzweiß, um die OCR-Genauigkeit zu verbessern.",
-    "binarize": "Binarisierung",
-    "binarize_desc": "Reduziert Rauschen, schärft Text.",
-    "contrast": "Kontrastverstärkung",
+    "grayscale_desc": "Konvertiert das Bild in Schwarzweiß, um die OCR-Genauigkeit zu verbessern.",    "contrast": "Kontrastverstärkung",
     "contrast_off": "Aus",
     "contrast_light": "Leicht",
     "contrast_strong": "Stark",

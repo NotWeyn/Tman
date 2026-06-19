@@ -31,10 +31,7 @@
   "preprocessing": {
     "title": "PREPROCESAMIENTO DE IMAGEN",
     "grayscale": "Escala de grises",
-    "grayscale_desc": "Convierte la imagen a blanco y negro para mejorar la precisión del OCR.",
-    "binarize": "Binarización",
-    "binarize_desc": "Reduce el ruido, enfoca el texto.",
-    "contrast": "Mejora de contraste",
+    "grayscale_desc": "Convierte la imagen a blanco y negro para mejorar la precisión del OCR.",    "contrast": "Mejora de contraste",
     "contrast_off": "Desactivado",
     "contrast_light": "Ligero",
     "contrast_strong": "Fuerte",

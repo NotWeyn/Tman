@@ -31,10 +31,7 @@
   "preprocessing": {
     "title": "GÖRÜNTÜ ÖN İŞLEME",
     "grayscale": "Gri tonlama (Grayscale)",
-    "grayscale_desc": "Görüntüyü siyah-beyaza çevirerek OCR doğruluğunu artırır.",
-    "binarize": "Binarization",
-    "binarize_desc": "Gürültüyü azaltır, metni keskinleştirir.",
-    "contrast": "Kontrast artırma",
+    "grayscale_desc": "Görüntüyü siyah-beyaza çevirerek OCR doğruluğunu artırır.",    "contrast": "Kontrast artırma",
     "contrast_off": "Kapalı",
     "contrast_light": "Hafif",
     "contrast_strong": "Güçlü",

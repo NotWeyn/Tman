@@ -17,7 +17,6 @@ pub struct AppConfig {
     pub capture_last_region: String,
 
     pub pre_grayscale: bool,
-    pub pre_binarize: bool,
     pub pre_contrast: String,
     pub pre_scale: f32,
 
@@ -55,7 +54,6 @@ impl Default for AppConfig {
             capture_last_region: "".to_string(),
 
             pre_grayscale: false,
-            pre_binarize: false,
             pre_contrast: "off".to_string(),
             pre_scale: 1.0,
 

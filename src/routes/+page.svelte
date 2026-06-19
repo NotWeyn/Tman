@@ -60,10 +60,8 @@
   let intervalSeconds = 3;
   let changeThreshold = 15;
   let grayscale = false;
-  let binarization = false;
   let contrast = 'off';
   let scale = '2x';
-  let showInGui = false;
 
   // 2. OCR
   let sourceLang = 'auto'; 
@@ -125,7 +123,6 @@
       changeThreshold = config.capture_change_threshold;
       lastRegion = config.capture_last_region;
       grayscale = config.pre_grayscale;
-      binarization = config.pre_binarize;
       contrast = config.pre_contrast;
       scale = config.pre_scale === 1.0 ? '1x' : config.pre_scale === 2.0 ? '2x' : '3x';
       
@@ -208,7 +205,6 @@
           capture_last_region: lastRegion,
           
           pre_grayscale: grayscale,
-          pre_binarize: binarization,
           pre_contrast: contrast,
           pre_scale: scaleFloat,
           
@@ -243,7 +239,7 @@
   $: {
     let _deps = [
       captureMode, intervalSeconds, changeThreshold, lastRegion,
-      grayscale, binarization, contrast, scale,
+      grayscale, contrast, scale,
       sourceLang, autoDetectLang, mergeLines, mergeParagraphs, minCharThreshold,
       activeProvider, targetLang, cacheTranslations, openaiEndpoint, openaiModel, libreUrl, openaiKey, deeplKey, googleKey,
       serverActive, serverPort, serverAutoStart, serverLocalOnly,
@@ -437,16 +433,7 @@
               </label>
             </div>
 
-            <div class="row">
-              <div class="row-info">
-                <label>{$t('preprocessing.binarize')}</label>
-                <div class="label-desc">{$t('preprocessing.binarize_desc')}</div>
-              </div>
-              <label class="toggle-wrapper">
-                <input type="checkbox" bind:checked={binarization} class="toggle-input" />
-                <div class="toggle-bg"><div class="toggle-dot"></div></div>
-              </label>
-            </div>
+
 
             <div class="row">
               <div class="row-info">
@@ -469,19 +456,6 @@
                 <option value="2x">{$t('preprocessing.scale_recommended')}</option>
                 <option value="3x">3x</option>
               </select>
-            </div>
-          </section>
-
-          <section class="section">
-            <h3 class="section-title">{$t('output.title')}</h3>
-            <div class="row">
-              <div class="row-info">
-                <label>{$t('output.show_in_gui')}</label>
-              </div>
-              <label class="toggle-wrapper">
-                <input type="checkbox" bind:checked={showInGui} class="toggle-input" />
-                <div class="toggle-bg"><div class="toggle-dot"></div></div>
-              </label>
             </div>
           </section>
         </div>

@@ -78,7 +78,7 @@ pub fn capture_region(cfg: &AppConfig) -> Result<(DynamicImage, DynamicImage, St
     }
 
     // Preprocess: Grayscale
-    if cfg.pre_grayscale || cfg.pre_binarize {
+    if cfg.pre_grayscale {
         processed_image = processed_image.grayscale();
         log::debug!("Preprocessing: grayscale applied");
     }
@@ -96,19 +96,7 @@ pub fn capture_region(cfg: &AppConfig) -> Result<(DynamicImage, DynamicImage, St
         _ => {} // "off", "none", ""
     }
 
-    // Preprocess: Binarize
-    if cfg.pre_binarize {
-        let mut luma = processed_image.into_luma8();
-        for p in luma.pixels_mut() {
-            if p[0] > 128 {
-                p[0] = 255;
-            } else {
-                p[0] = 0;
-            }
-        }
-        processed_image = DynamicImage::ImageLuma8(luma);
-        log::debug!("Preprocessing: binarization applied (threshold=128)");
-    }
+
 
     Ok((original_image, processed_image, region))
 }

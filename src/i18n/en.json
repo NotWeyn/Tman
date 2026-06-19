@@ -31,10 +31,7 @@
   "preprocessing": {
     "title": "IMAGE PREPROCESSING",
     "grayscale": "Grayscale",
-    "grayscale_desc": "Converts image to black & white to improve OCR accuracy.",
-    "binarize": "Binarization",
-    "binarize_desc": "Reduces noise, sharpens text.",
-    "contrast": "Contrast enhancement",
+    "grayscale_desc": "Converts image to black & white to improve OCR accuracy.",    "contrast": "Contrast enhancement",
     "contrast_off": "Off",
     "contrast_light": "Light",
     "contrast_strong": "Strong",

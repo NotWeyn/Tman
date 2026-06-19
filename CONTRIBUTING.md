@@ -226,9 +226,8 @@ Two public functions:
 
 **Preprocessing pipeline** (configurable via `AppConfig`):
 1. **Lanczos3 upscale** — if `pre_scale > 1.0`
-2. **Grayscale** — if `pre_grayscale` or `pre_binarize`
+2. **Grayscale** — if `pre_grayscale`
 3. **Contrast adjustment** — `"hafif"` (+15) or `"guclu"` (+40)
-4. **Binarization** — threshold at 128
 
 Returns `(original_image, processed_image, region_string)`.
 

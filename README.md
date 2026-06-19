@@ -285,7 +285,6 @@ Configuration is stored as JSON at `~/.local/share/tman/config.json` (Linux). Th
 | `capture_last_region` | `string` | `""` | Last selected region (auto-saved, e.g. `"596,809 525x181"`) |
 | **Preprocessing** | | | |
 | `pre_grayscale` | `bool` | `false` | Convert capture to grayscale before OCR |
-| `pre_binarize` | `bool` | `false` | Apply binary threshold (>128 → white, ≤128 → black) |
 | `pre_contrast` | `string` | `"kapali"` | Contrast adjustment: `"kapali"` (off), `"hafif"` (+15), `"guclu"` (+40) |
 | `pre_scale` | `f32` | `1.0` | Upscale factor (Lanczos3). Values > 1.0 enlarge the image. |
 | **OCR** | | | |
