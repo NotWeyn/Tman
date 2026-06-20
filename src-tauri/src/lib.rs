@@ -24,6 +24,8 @@ pub struct AppState {
     pub actual_port: Mutex<u16>,
     pub server_shutdown_tx: Mutex<Option<tokio::sync::oneshot::Sender<()>>>,
     pub last_text: Mutex<Option<String>>,
+    pub last_image_hash: Mutex<Option<u64>>,
+    pub last_ocr_result: Mutex<Option<(String, String)>>,
     pub last_broadcast: Mutex<Option<String>>,
     pub http_client: reqwest::Client,
 }
@@ -86,12 +88,49 @@ async fn capture_and_translate(
     let capture_ms = t0.elapsed().as_millis();
     log::debug!("Capture phase completed in {}ms", capture_ms);
 
-    // 2. OCR
+    // 2. OCR (with Image Hashing to skip OCR if image is identical)
     let t1 = std::time::Instant::now();
-    let (original_text, detected_lang) = ocr::extract_text(&processed_image, &cfg)?;
+    let mut original_text = String::new();
+    let mut detected_lang = String::new();
+    let mut skip_ocr = false;
+
+    // Hash the processed image
+    let current_hash = {
+        use std::hash::{Hash, Hasher};
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        processed_image.as_bytes().hash(&mut hasher);
+        hasher.finish()
+    };
+
+    // Check if hash matches previous capture
+    {
+        let last_hash_lock = state.last_image_hash.lock().await;
+        if let Some(last_h) = *last_hash_lock {
+            if last_h == current_hash {
+                let last_res_lock = state.last_ocr_result.lock().await;
+                if let Some(res) = &*last_res_lock {
+                    original_text = res.0.clone();
+                    detected_lang = res.1.clone();
+                    skip_ocr = true;
+                    log::debug!("Image identical to last capture (hash {}), skipping OCR! (0ms)", current_hash);
+                }
+            }
+        }
+    }
+
+    if !skip_ocr {
+        let (txt, lang) = ocr::extract_text(&processed_image, &cfg)?;
+        original_text = txt;
+        detected_lang = lang;
+        
+        // Save to state for next time
+        *state.last_image_hash.lock().await = Some(current_hash);
+        *state.last_ocr_result.lock().await = Some((original_text.clone(), detected_lang.clone()));
+    }
+
     let ocr_ms = t1.elapsed().as_millis();
     log::debug!(
-        "OCR completed in {}ms — detected_lang='{}', text_len={} chars\n  text_preview=\"{}\"",
+        "OCR phase completed in {}ms — detected_lang='{}', text_len={} chars\n  text_preview=\"{}\"",
         ocr_ms,
         detected_lang,
         original_text.len(),
@@ -562,6 +601,8 @@ pub fn run() {
                 actual_port: Mutex::new(app_config.server_port),
                 server_shutdown_tx: Mutex::new(None),
                 last_text: Mutex::new(None),
+                last_image_hash: Mutex::new(None),
+                last_ocr_result: Mutex::new(None),
                 last_broadcast: Mutex::new(None),
                 http_client,
             });

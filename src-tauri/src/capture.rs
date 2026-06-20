@@ -76,7 +76,7 @@ pub fn capture_region(cfg: &AppConfig) -> Result<(DynamicImage, DynamicImage, St
         let nwidth = (processed_image.width() as f32 * cfg.pre_scale) as u32;
         let nheight = (processed_image.height() as f32 * cfg.pre_scale) as u32;
         processed_image =
-            processed_image.resize(nwidth, nheight, image::imageops::FilterType::Lanczos3);
+            processed_image.resize(nwidth, nheight, image::imageops::FilterType::Triangle);
         log::debug!(
             "Preprocessing: scaled {}x → {}x{}",
             cfg.pre_scale,

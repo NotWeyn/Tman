@@ -12,12 +12,12 @@
 
 ---
 
-Tman is a high-performance screen translation application purpose-built for Wayland compositors (Hyprland, Sway, etc.). It captures a screen region, extracts text via a native Rust OCR engine, translates it through your choice of provider, and streams the result to both the desktop UI and a mobile-friendly web interface — all in under 100 ms per cycle.
+Tman is a high-performance screen translation application purpose-built for Wayland compositors (Hyprland, Sway, etc.). It captures a screen region, extracts text via a native Rust OCR engine, translates it through your choice of provider, and streams the result to both the desktop UI and a mobile-friendly web interface. With its advanced dual-layer caching, it delivers instant results for repeated captures.
 
 ## ✨ Key Features
 
 - **Wayland-native capture** — Uses `grim` + `slurp` for precise, compositor-integrated screen region selection.
-- **Sub-100 ms native OCR** — Powered by [`oar-ocr`](https://github.com/greatv/oar-ocr) with PaddleOCR v5 ONNX models loaded once into memory. No Python. No sidecars.
+- **Native OCR** — Powered by [`oar-ocr`](https://github.com/greatv/oar-ocr) with PaddleOCR v5 ONNX models loaded once into memory. No Python. No sidecars.
 - **Multiple translation providers** — Google Translate (free, no key), OpenAI-compatible APIs (GPT-4o-mini, etc.), and DeepL.
 - **Mobile Link & Web UI** — Scan a QR code to view real-time translations on your phone or tablet via an embedded Axum WebSocket server and a glassmorphic web interface.
 - **Smart caching** — SQLite-backed translation cache prevents redundant API calls; full offline history with export (JSON, CSV, TXT).
@@ -240,7 +240,7 @@ Tman/
 2. **Region selection** → `slurp` prompts the user to select a screen region (saved for repeat captures).
 3. **Screen capture** → `grim -g <region> -` captures the region as PNG to stdout.
 4. **Image preprocessing** → Rust `image` crate applies configurable pipeline: Lanczos3 upscaling → grayscale → contrast → binarization.
-5. **OCR** → Preprocessed image passed to `oar-ocr` (PaddleOCR v5 ONNX models, resident in memory). Extracts text in ~50 ms.
+5. **OCR** → Preprocessed image passed to `oar-ocr` (PaddleOCR v5 ONNX models, resident in memory). Extracts text in ~300-600 ms depending on text density. If the captured image is completely identical to the previous one (Image Hash Match), this step is skipped instantly (0 ms).
 6. **Language detection** → `whichlang` identifies source language from extracted text.
 7. **Cache check** → SQLite lookup for identical `(original_text, target_lang)` pair. If hit, skip API call.
 8. **Translation** → On cache miss, dispatches to selected provider (Google/OpenAI/DeepL).
@@ -251,15 +251,17 @@ Tman/
 
 ### Performance Characteristics
 
-| Stage | Typical Time |
-|---|---|
-| Screen capture (`grim`) | ~20 ms |
-| Image preprocessing | ~5 ms |
-| OCR (`oar-ocr`) | ~50 ms |
-| Translation (cache hit) | ~0 ms |
-| Translation (Google API) | ~200 ms |
-| **Total pipeline (cache hit)** | **~75 ms** |
-| **Total pipeline (API call)** | **~275 ms** |
+| Phase | Realistic Time |
+|-------|----------------|
+| Screen capture (`grim`) | ~30-50 ms |
+| Image preprocessing (Bilinear) | ~20-50 ms |
+| OCR (`oar-ocr`) | ~300-600 ms |
+| Image Hash Match (Skip OCR) | ~0-5 ms |
+| DB Cache Hit | ~5-15 ms |
+| Translation (API Call) | ~800-1500 ms |
+| **Total pipeline (Exact same screen)** | **~50-100 ms** |
+| **Total pipeline (New screen, DB hit)** | **~350-700 ms** |
+| **Total pipeline (New translation)** | **~1000-2000 ms** |
 
 Performance is logged per cycle: `[perf] capture=Xms ocr=Xms translate=Xms total=Xms`.
 
