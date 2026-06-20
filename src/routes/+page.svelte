@@ -1,5 +1,8 @@
 <script>
   import { invoke } from '@tauri-apps/api/core';
+  import { listen } from '@tauri-apps/api/event';
+  import { save, open } from '@tauri-apps/plugin-dialog';
+  import { spring } from 'svelte/motion';
   import { onMount } from 'svelte';
   import LanguagePicker from '$lib/LanguagePicker.svelte';
   import { t, locale, setLocale } from '$lib/i18n';
@@ -15,6 +18,7 @@
     keyboard: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2" ry="2"/><path d="M6 8h.001"/><path d="M10 8h.001"/><path d="M14 8h.001"/><path d="M18 8h.001"/><path d="M8 12h.001"/><path d="M12 12h.001"/><path d="M16 12h.001"/><path d="M7 16h10"/></svg>`,
     clock: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
     settings: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>`,
+    sliders: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>`,
     monitorPlay: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M14 9.5 10 7v5z"/><line x1="12" x2="12" y1="17" y2="21"/><line x1="8" x2="16" y1="21" y2="21"/></svg>`
   };
 
@@ -25,6 +29,7 @@
     { id: 'mobil', label: $t('tabs.server'), icon: icons.smartphone },
     { id: 'kisayollar', label: $t('tabs.shortcuts'), icon: icons.keyboard },
     { id: 'gecmis', label: $t('tabs.history'), icon: icons.clock },
+    { id: 'secenekler', label: $t('tabs.options') || 'Seçenekler', icon: icons.sliders },
     { id: 'uygulama', label: $t('tabs.app'), icon: icons.settings }
   ];
 
@@ -93,9 +98,68 @@
   let saveHistory = true;
   let maxHistory = 500;
 
-  // 7. Uygulama
+  // 7. Uygulama & Seçenekler
   let logLevel = 'info';
   let appLang = 'en';
+  let soundCapture = true;
+  let soundComplete = true;
+  let autoCopy = false;
+
+  /** @type {string | null} */
+  let customClickAudio = null;
+  /** @type {string | null} */
+  let customPopAudio = null;
+
+  const captureScale = spring(1, { stiffness: 0.1, damping: 0.4 });
+
+  /**
+   * @param {string} type
+   */
+  function playSound(type) {
+    if (type === 'click' && !soundCapture) return;
+    if (type === 'pop' && !soundComplete) return;
+
+    let customAudioStr = type === 'click' ? customClickAudio : customPopAudio;
+    if (customAudioStr) {
+      try {
+        const audio = new window.Audio("data:audio/mp3;base64," + customAudioStr);
+        audio.play().catch(e => console.error("Özel ses çalma hatası:", e));
+      } catch (e) {
+        console.error("Özel ses çalma hatası:", e);
+      }
+      return;
+    }
+
+    try {
+      // @ts-ignore
+      const AudioCtx = window.AudioContext || window['webkitAudioContext'];
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      if (type === 'click') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(600, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.05);
+        gain.gain.setValueAtTime(0.5, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.05);
+      } else if (type === 'pop') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(250, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.1);
+      }
+    } catch (e) {
+      console.error("Audio playback failed", e);
+    }
+  }
 
   // Sync i18n locale when appLang changes
   $: setLocale(appLang);
@@ -115,6 +179,13 @@
   let configPath = '';
 
   onMount(async () => {
+    try {
+      customClickAudio = await invoke('get_custom_sound', { soundType: 'click' });
+      customPopAudio = await invoke('get_custom_sound', { soundType: 'pop' });
+    } catch(e) {
+      console.error("Özel sesler yüklenemedi", e);
+    }
+
     try {
       const config = await invoke('get_config');
       captureMode = config.capture_mode;
@@ -147,6 +218,20 @@
       
       logLevel = config.app_log_level;
       appLang = config.app_lang || 'tr';
+      autoCopy = config.ui_auto_copy;
+      soundCapture = config.ui_sound_capture ?? true;
+      soundComplete = config.ui_sound_complete ?? true;
+
+      // Event listeners
+      listen('capture-done', () => {
+        playSound('click');
+      });
+      listen('translation-update', (event) => {
+        playSound('pop');
+        if (autoCopy && event.payload && event.payload.translated_text) {
+          navigator.clipboard.writeText(event.payload.translated_text).catch(e => console.error("Clipboard error", e));
+        }
+      });
       
       openaiKey = await invoke('get_secret', { key: 'openai_key' });
       deeplKey = await invoke('get_secret', { key: 'deepl_key' });
@@ -222,7 +307,10 @@
           history_max_records: Number(maxHistory),
           
           app_log_level: logLevel,
-          app_lang: appLang
+          app_lang: appLang,
+          ui_auto_copy: autoCopy,
+          ui_sound_capture: soundCapture,
+          ui_sound_complete: soundComplete
         }
       });
       await invoke('set_secret', { key: 'openai_key', secret: openaiKey });
@@ -241,7 +329,7 @@
       activeProvider, targetLang, cacheTranslations, openaiEndpoint, openaiModel, openaiKey, deeplKey, googleKey,
       serverActive, serverPort, serverAutoStart, serverLocalOnly,
       saveHistory, maxHistory,
-      logLevel, appLang
+      logLevel, appLang, autoCopy, soundCapture, soundComplete
     ];
     saveConfig();
   }
@@ -281,11 +369,57 @@
         return;
       }
       
-      const savedPath = await invoke('export_history_to_file', { format: exportFormat });
+      const defaultExt = exportFormat === 'CSV' ? 'csv' : (exportFormat === 'Anki' ? 'tsv' : (exportFormat === 'JSON' ? 'json' : 'txt'));
+      const savePath = await save({
+        defaultPath: 'tman_history.' + defaultExt,
+        filters: [{
+          name: 'Tman Export',
+          extensions: [defaultExt]
+        }]
+      });
+
+      if (!savePath) return; // User cancelled
+
+      const savedPath = await invoke('export_history_to_file', { format: exportFormat, savePath });
       showOverlay($t('history.export_success').replace('{path}', savedPath), $t('overlay.success'), "success");
     } catch (e) {
       console.error("Dışa aktarma hatası:", e);
       showOverlay($t('history.export_error') + e, $t('overlay.error'), "error");
+    }
+  }
+
+  /**
+   * @param {string} type
+   */
+  async function setCustomSound(type) {
+    try {
+      const filePath = await open({
+        multiple: false,
+        filters: [{ name: 'Audio', extensions: ['mp3', 'wav', 'ogg'] }]
+      });
+      if (filePath) {
+        await invoke('save_custom_sound', { soundType: type, sourcePath: filePath });
+        const b64 = await invoke('get_custom_sound', { soundType: type });
+        if (type === 'click') customClickAudio = b64;
+        else customPopAudio = b64;
+        showOverlay($t('options.custom_success_msg'), $t('options.success_title'), "success");
+      }
+    } catch(e) {
+      showOverlay($t('options.error_title') + ": " + e, $t('options.error_title'), "error");
+    }
+  }
+
+  /**
+   * @param {string} type
+   */
+  async function resetCustomSound(type) {
+    try {
+      await invoke('reset_custom_sound', { soundType: type });
+      if (type === 'click') customClickAudio = null;
+      else customPopAudio = null;
+      showOverlay($t('options.reset_success_msg'), $t('options.reset_title'), "info");
+    } catch(e) {
+      showOverlay($t('options.error_title') + ": " + e, $t('options.error_title'), "error");
     }
   }
 
@@ -377,7 +511,12 @@
       {#if activeTab === 'yakalama'}
         <div class="tab-content">
           <div class="action-header">
-            <button class="btn btn-primary btn-large w-100" on:click={pickRegion}>
+            <button class="btn btn-primary btn-large w-100" 
+                    on:click={pickRegion}
+                    on:mousedown={() => captureScale.set(0.95)}
+                    on:mouseup={() => captureScale.set(1)}
+                    on:mouseleave={() => captureScale.set(1)}
+                    style="transform: scale({$captureScale})">
               {@html icons.camera}
               {$t('capture.capture_btn')}
             </button>
@@ -453,6 +592,18 @@
                 <option value="2x">{$t('preprocessing.scale_recommended')}</option>
                 <option value="3x">3x</option>
               </select>
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="row">
+              <div class="row-info">
+                <label>{$t('output.auto_copy') || 'Otomatik Panoya Kopyala'}</label>
+              </div>
+              <label class="toggle-wrapper">
+                <input type="checkbox" bind:checked={autoCopy} class="toggle-input" />
+                <div class="toggle-bg"><div class="toggle-dot"></div></div>
+              </label>
             </div>
           </section>
         </div>
@@ -758,10 +909,53 @@ bind = $mainMod, I, exec, screen-translator --toggle-interval</code></pre>
                 <select bind:value={exportFormat} class="form-select w-auto">
                   <option value="JSON">JSON</option>
                   <option value="CSV">CSV</option>
+                  <option value="Anki">Anki (TSV)</option>
                   <option value="TXT">TXT</option>
                 </select>
                 <button class="btn btn-primary" on:click={exportHistory}>{$t('history.export_btn')}</button>
               </div>
+            </div>
+          </section>
+        </div>
+      {/if}
+
+      {#if activeTab === 'secenekler'}
+        <div class="tab-content">
+          <section class="section">
+            <h3 class="section-title">{$t('options.title') || 'Geri Bildirim ve Sesler'}</h3>
+
+            <div class="row">
+              <div class="row-info">
+                <label>{$t('options.sound_capture') || 'Çeviri Başlatma Sesi'}</label>
+                <div class="label-desc">{$t('options.sound_capture_desc') || 'Ekran seçildiğinde hafif bir klik sesi çalar.'}</div>
+                <div style="margin-top: 5px; display: flex; gap: 8px; align-items: center;">
+                  <button class="btn btn-secondary" style="font-size: 11px; padding: 4px 8px;" on:click={() => setCustomSound('click')}>{$t('options.custom_sound_btn')}</button>
+                  {#if customClickAudio}
+                    <span class="reset-text" on:click={() => resetCustomSound('click')} title={$t('options.reset_desc_click')} style="font-size: 10px; color: var(--accent); cursor: pointer; text-decoration: underline;">{$t('options.reset')}</span>
+                  {/if}
+                </div>
+              </div>
+              <label class="toggle-wrapper">
+                <input type="checkbox" bind:checked={soundCapture} class="toggle-input" />
+                <div class="toggle-bg"><div class="toggle-dot"></div></div>
+              </label>
+            </div>
+
+            <div class="row">
+              <div class="row-info">
+                <label>{$t('options.sound_complete') || 'Çeviri Tamamlama Sesi'}</label>
+                <div class="label-desc">{$t('options.sound_complete_desc') || 'Çeviri bittiğinde yumuşak bir pop sesi çalar.'}</div>
+                <div style="margin-top: 5px; display: flex; gap: 8px; align-items: center;">
+                  <button class="btn btn-secondary" style="font-size: 11px; padding: 4px 8px;" on:click={() => setCustomSound('pop')}>{$t('options.custom_sound_btn')}</button>
+                  {#if customPopAudio}
+                    <span class="reset-text" on:click={() => resetCustomSound('pop')} title={$t('options.reset_desc_pop')} style="font-size: 10px; color: var(--accent); cursor: pointer; text-decoration: underline;">{$t('options.reset')}</span>
+                  {/if}
+                </div>
+              </div>
+              <label class="toggle-wrapper">
+                <input type="checkbox" bind:checked={soundComplete} class="toggle-input" />
+                <div class="toggle-bg"><div class="toggle-dot"></div></div>
+              </label>
             </div>
           </section>
         </div>

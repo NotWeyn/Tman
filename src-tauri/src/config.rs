@@ -37,6 +37,10 @@ pub struct AppConfig {
 
     pub app_log_level: String,
     pub app_lang: String,
+    
+    pub ui_auto_copy: bool,
+    pub ui_sound_capture: bool,
+    pub ui_sound_complete: bool,
 }
 
 impl Default for AppConfig {
@@ -73,6 +77,9 @@ impl Default for AppConfig {
 
             app_log_level: "info".to_string(),
             app_lang: "en".to_string(),
+            ui_auto_copy: false,
+            ui_sound_capture: true,
+            ui_sound_complete: true,
         }
     }
 }

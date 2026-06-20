@@ -64,6 +64,9 @@ async fn capture_and_translate(
         original_image.height()
     );
 
+    use tauri::Emitter;
+    let _ = app.emit("capture-done", ());
+
     if cfg.capture_last_region != region {
         let mut cfg_mut = state.config.lock().await;
         cfg_mut.capture_last_region = region.clone();
@@ -244,20 +247,17 @@ async fn clear_history(state: State<'_, Arc<AppState>>) -> Result<(), String> {
 #[tauri::command]
 async fn export_history_to_file(
     format: String,
+    save_path: String,
     state: State<'_, Arc<AppState>>,
 ) -> Result<String, String> {
     let pool = get_db(&state).await?;
     let history = db::get_history(&pool).await?;
-    let download_dir = dirs::download_dir().ok_or("Cannot find Downloads directory")?;
 
-    let mut filename = "tman_history.txt";
     let mut data_str = String::new();
 
     if format == "JSON" {
-        filename = "tman_history.json";
         data_str = serde_json::to_string_pretty(&history).map_err(|e| e.to_string())?;
     } else if format == "CSV" {
-        filename = "tman_history.csv";
         data_str.push_str("id,original_text,translated_text,source_lang,target_lang,timestamp\n");
         for r in history {
             data_str.push_str(&format!(
@@ -270,6 +270,12 @@ async fn export_history_to_file(
                 r.timestamp
             ));
         }
+    } else if format == "Anki" {
+        for r in history {
+            let orig = r.original_text.replace('\t', " ").replace('\n', " ");
+            let trans = r.translated_text.replace('\t', " ").replace('\n', " ");
+            data_str.push_str(&format!("{}\t{}\n", orig, trans));
+        }
     } else {
         for r in history {
             data_str.push_str(&format!(
@@ -279,10 +285,51 @@ async fn export_history_to_file(
         }
     }
 
-    let file_path = download_dir.join(filename);
-    std::fs::write(&file_path, data_str).map_err(|e| format!("Failed to save file: {}", e))?;
+    std::fs::write(&save_path, data_str).map_err(|e| format!("Failed to save file: {}", e))?;
 
-    Ok(file_path.to_string_lossy().to_string())
+    Ok(save_path)
+}
+
+#[tauri::command]
+async fn save_custom_sound(
+    sound_type: String,
+    source_path: String,
+    app: tauri::AppHandle,
+) -> Result<(), String> {
+    let data_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    std::fs::create_dir_all(&data_dir).map_err(|e| e.to_string())?;
+    let dest_path = data_dir.join(format!("custom_{}.mp3", sound_type));
+    std::fs::copy(&source_path, &dest_path).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+async fn get_custom_sound(
+    sound_type: String,
+    app: tauri::AppHandle,
+) -> Result<Option<String>, String> {
+    let data_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    let target_path = data_dir.join(format!("custom_{}.mp3", sound_type));
+    if target_path.exists() {
+        let bytes = std::fs::read(&target_path).map_err(|e| e.to_string())?;
+        use base64::{engine::general_purpose::STANDARD, Engine as _};
+        Ok(Some(STANDARD.encode(&bytes)))
+    } else {
+        Ok(None)
+    }
+}
+
+#[tauri::command]
+async fn reset_custom_sound(
+    sound_type: String,
+    app: tauri::AppHandle,
+) -> Result<(), String> {
+    let data_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    let target_path = data_dir.join(format!("custom_{}.mp3", sound_type));
+    if target_path.exists() {
+        std::fs::remove_file(&target_path).map_err(|e| e.to_string())?;
+    }
+    Ok(())
 }
 
 #[tauri::command]
@@ -488,6 +535,7 @@ async fn unload_ocr() -> Result<(), String> {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             let start = std::time::Instant::now();
@@ -620,6 +668,9 @@ pub fn run() {
             get_config_path,
             set_config_path,
             export_history_to_file,
+            save_custom_sound,
+            get_custom_sound,
+            reset_custom_sound,
             check_for_update,
             install_update,
             get_app_version,

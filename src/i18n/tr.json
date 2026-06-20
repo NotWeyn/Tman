@@ -6,7 +6,8 @@
     "server": "Mobil sunucu",
     "shortcuts": "Kısayollar",
     "history": "Geçmiş",
-    "app": "Uygulama"
+    "app": "Uygulama",
+    "options": "Seçenekler"
   },
   "capture": {
     "title": "YAKALAMA MODU",
@@ -42,7 +43,8 @@
   },
   "output": {
     "title": "ÇIKTI",
-    "show_in_gui": "GUI'de göster"
+    "show_in_gui": "GUI'de göster",
+    "auto_copy": "Otomatik panoya kopyala"
   },
   "ocr": {
     "title": "MOTOR",
@@ -150,7 +152,9 @@
     "installing": "Kuruluyor...",
     "update_btn": "Güncelle",
     "checking": "Kontrol ediliyor...",
-    "check_btn": "Kontrol Et"
+    "check_btn": "Kontrol Et",
+    "tactile_sound": "Dokunsal sesler",
+    "tactile_sound_desc": "Yakalama ve çeviri bitişinde ses çalar."
   },
   "overlay": {
     "error": "HATA",
@@ -168,5 +172,21 @@
     "settings": "AYARLAR",
     "auto": "Otomatik",
     "search_placeholder": "Ara... (kod veya isim)"
+  },
+  "options": {
+    "title": "Geri Bildirim ve Sesler",
+    "sound_capture": "Çeviri Başlatma Sesi",
+    "sound_capture_desc": "Ekran seçildiğinde hafif bir klik sesi çalar.",
+    "sound_complete": "Çeviri Tamamlama Sesi",
+    "sound_complete_desc": "Çeviri bittiğinde yumuşak bir pop sesi çalar.",
+    "custom_sound_btn": "Özel Ses Seç",
+    "reset": "sıfırla",
+    "reset_desc_click": "Özel sesi silip orijinal klik sesine döndürür",
+    "reset_desc_pop": "Özel sesi silip orijinal pop sesine döndürür",
+    "custom_success_msg": "Ses başarıyla güncellendi.",
+    "success_title": "Başarılı",
+    "error_title": "Hata",
+    "reset_success_msg": "Orijinal sese dönüldü.",
+    "reset_title": "Sıfırlandı"
   }
 }

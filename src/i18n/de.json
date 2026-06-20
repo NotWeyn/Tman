@@ -6,7 +6,8 @@
     "server": "Mobiler Server",
     "shortcuts": "Tastenkürzel",
     "history": "Verlauf",
-    "app": "App"
+    "app": "App",
+    "options": "Optionen"
   },
   "capture": {
     "title": "ERFASSUNGSMODUS",
@@ -42,7 +43,8 @@
   },
   "output": {
     "title": "AUSGABE",
-    "show_in_gui": "In GUI anzeigen"
+    "show_in_gui": "In GUI anzeigen",
+    "auto_copy": "Auto-copy to clipboard"
   },
   "ocr": {
     "title": "OCR-ENGINE",
@@ -150,7 +152,9 @@
     "installing": "Installieren...",
     "update_btn": "Aktualisieren",
     "checking": "Überprüfen...",
-    "check_btn": "Prüfen"
+    "check_btn": "Prüfen",
+    "tactile_sound": "Tactile sounds",
+    "tactile_sound_desc": "Play sound on capture and translation."
   },
   "overlay": {
     "error": "FEHLER",
@@ -168,5 +172,21 @@
     "settings": "EINSTELLUNGEN",
     "auto": "Automatisch",
     "search_placeholder": "Suchen... (Code oder Name)"
+  },
+  "options": {
+    "title": "Feedback & Töne",
+    "sound_capture": "Aufnahmeton",
+    "sound_capture_desc": "Spielt einen leisen Klick ab, wenn der Bildschirm aufgenommen wird.",
+    "sound_complete": "Abschlusston",
+    "sound_complete_desc": "Spielt einen Pop-Ton ab, wenn die Übersetzung fertig ist.",
+    "custom_sound_btn": "Benutzerdefinierten Ton wählen",
+    "reset": "zurücksetzen",
+    "reset_desc_click": "Entfernt den benutzerdefinierten Ton und stellt den originalen Klickton wieder her",
+    "reset_desc_pop": "Entfernt den benutzerdefinierten Ton und stellt den originalen Pop-Ton wieder her",
+    "custom_success_msg": "Ton erfolgreich aktualisiert.",
+    "success_title": "Erfolg",
+    "error_title": "Fehler",
+    "reset_success_msg": "Auf Originalton zurückgesetzt.",
+    "reset_title": "Zurückgesetzt"
   }
 }

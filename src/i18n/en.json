@@ -6,7 +6,8 @@
     "server": "Mobile Server",
     "shortcuts": "Shortcuts",
     "history": "History",
-    "app": "App"
+    "app": "App",
+    "options": "Options"
   },
   "capture": {
     "title": "CAPTURE MODE",
@@ -42,7 +43,8 @@
   },
   "output": {
     "title": "OUTPUT",
-    "show_in_gui": "Show in GUI"
+    "show_in_gui": "Show in GUI",
+    "auto_copy": "Auto-copy to clipboard"
   },
   "ocr": {
     "title": "ENGINE",
@@ -150,7 +152,9 @@
     "installing": "Installing...",
     "update_btn": "Update",
     "checking": "Checking...",
-    "check_btn": "Check"
+    "check_btn": "Check",
+    "tactile_sound": "Tactile sounds",
+    "tactile_sound_desc": "Play sound on capture and translation."
   },
   "overlay": {
     "error": "ERROR",
@@ -168,5 +172,21 @@
     "settings": "SETTINGS",
     "auto": "Auto",
     "search_placeholder": "Search... (code or name)"
+  },
+  "options": {
+    "title": "Feedback & Sounds",
+    "sound_capture": "Capture Sound",
+    "sound_capture_desc": "Play a soft click when screen is captured.",
+    "sound_complete": "Completion Sound",
+    "sound_complete_desc": "Play a pop sound when translation is ready.",
+    "custom_sound_btn": "Select Custom Sound",
+    "reset": "reset",
+    "reset_desc_click": "Remove custom sound and revert to original click sound",
+    "reset_desc_pop": "Remove custom sound and revert to original pop sound",
+    "custom_success_msg": "Sound updated successfully.",
+    "success_title": "Success",
+    "error_title": "Error",
+    "reset_success_msg": "Reverted to original sound.",
+    "reset_title": "Reset"
   }
 }

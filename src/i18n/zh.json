@@ -6,7 +6,8 @@
     "server": "移动服务端",
     "shortcuts": "快捷键",
     "history": "历史记录",
-    "app": "应用设置"
+    "app": "应用设置",
+    "options": "选项"
   },
   "capture": {
     "title": "截图模式",
@@ -42,7 +43,8 @@
   },
   "output": {
     "title": "输出设置",
-    "show_in_gui": "在主界面中显示"
+    "show_in_gui": "在主界面中显示",
+    "auto_copy": "Auto-copy to clipboard"
   },
   "ocr": {
     "title": "识别引擎",
@@ -150,7 +152,9 @@
     "installing": "正在安装...",
     "update_btn": "立即更新",
     "checking": "正在检查...",
-    "check_btn": "检查"
+    "check_btn": "检查",
+    "tactile_sound": "Tactile sounds",
+    "tactile_sound_desc": "Play sound on capture and translation."
   },
   "overlay": {
     "error": "错误",
@@ -168,5 +172,21 @@
     "settings": "设置",
     "auto": "自动",
     "search_placeholder": "搜索... (代码或名称)"
+  },
+  "options": {
+    "title": "反馈与声音",
+    "sound_capture": "捕获声音",
+    "sound_capture_desc": "捕获屏幕时播放柔和的点击声。",
+    "sound_complete": "完成声音",
+    "sound_complete_desc": "翻译就绪时播放弹出声。",
+    "custom_sound_btn": "选择自定义声音",
+    "reset": "重置",
+    "reset_desc_click": "删除自定义声音并恢复原始点击声",
+    "reset_desc_pop": "删除自定义声音并恢复原始弹出声",
+    "custom_success_msg": "声音更新成功。",
+    "success_title": "成功",
+    "error_title": "错误",
+    "reset_success_msg": "已恢复原始声音。",
+    "reset_title": "已重置"
   }
 }

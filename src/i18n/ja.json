@@ -6,7 +6,8 @@
     "server": "モバイルサーバー",
     "shortcuts": "ショートカット",
     "history": "履歴",
-    "app": "アプリ設定"
+    "app": "アプリ設定",
+    "options": "オプション"
   },
   "capture": {
     "title": "キャプチャモード",
@@ -42,7 +43,8 @@
   },
   "output": {
     "title": "出力設定",
-    "show_in_gui": "GUIに表示する"
+    "show_in_gui": "GUIに表示する",
+    "auto_copy": "Auto-copy to clipboard"
   },
   "ocr": {
     "title": "エンジン",
@@ -150,7 +152,9 @@
     "installing": "インストール中...",
     "update_btn": "アップデート",
     "checking": "確認中...",
-    "check_btn": "確認"
+    "check_btn": "確認",
+    "tactile_sound": "Tactile sounds",
+    "tactile_sound_desc": "Play sound on capture and translation."
   },
   "overlay": {
     "error": "エラー",
@@ -168,5 +172,21 @@
     "settings": "設定",
     "auto": "自動",
     "search_placeholder": "検索... (コードまたは名前)"
+  },
+  "options": {
+    "title": "フィードバックとサウンド",
+    "sound_capture": "キャプチャ音",
+    "sound_capture_desc": "画面をキャプチャしたときに柔らかいクリック音を鳴らします。",
+    "sound_complete": "完了音",
+    "sound_complete_desc": "翻訳の準備ができたときにポップ音を鳴らします。",
+    "custom_sound_btn": "カスタムサウンドを選択",
+    "reset": "リセット",
+    "reset_desc_click": "カスタムサウンドを削除し、元のクリック音に戻します",
+    "reset_desc_pop": "カスタムサウンドを削除し、元のポップ音に戻します",
+    "custom_success_msg": "サウンドが正常に更新されました。",
+    "success_title": "成功",
+    "error_title": "エラー",
+    "reset_success_msg": "元のサウンドに戻しました。",
+    "reset_title": "リセット"
   }
 }
