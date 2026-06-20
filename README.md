@@ -263,6 +263,9 @@ Tman/
 | **Total pipeline (New screen, DB hit)** | **~350-700 ms** |
 | **Total pipeline (New translation)** | **~1000-2000 ms** |
 
+These figures may vary from person to person; do not act based on these figures without trying it out for yourself!
+On my personal gaming PC, I see a cache of 0–50; for a new screen, the maximum is 650, with an average of 500. 
+
 Performance is logged per cycle: `[perf] capture=Xms ocr=Xms translate=Xms total=Xms`.
 
 ---
@@ -281,13 +284,13 @@ Configuration is stored as JSON at `~/.local/share/tman/config.json` (Linux). Th
 | `server_local_only` | `bool` | `false` | Bind to `127.0.0.1` instead of `0.0.0.0` |
 | `server_auto_start` | `bool` | `true` | Start server automatically on app launch |
 | **Capture** | | | |
-| `capture_mode` | `string` | `"manual"` | Capture mode: `"manual"` or `"degisim"` (auto-capture on text change) |
+| `capture_mode` | `string` | `"manual"` | Capture mode: `"manual"` or `"change"` (auto-capture on text change) |
 | `capture_interval_sec` | `u32` | `5` | Interval between captures in auto mode (seconds) |
 | `capture_change_threshold` | `u32` | `5` | *(Legacy)* Pixel change threshold for auto-capture |
 | `capture_last_region` | `string` | `""` | Last selected region (auto-saved, e.g. `"596,809 525x181"`) |
 | **Preprocessing** | | | |
 | `pre_grayscale` | `bool` | `false` | Convert capture to grayscale before OCR |
-| `pre_contrast` | `string` | `"kapali"` | Contrast adjustment: `"kapali"` (off), `"hafif"` (+15), `"guclu"` (+40) |
+| `pre_contrast` | `string` | `"off"` | Contrast adjustment: `"off"`, `"light"` (+15), `"strong"` (+40) |
 | `pre_scale` | `f32` | `1.0` | Upscale factor (Lanczos3). Values > 1.0 enlarge the image. |
 | **OCR** | | | |
 | `ocr_source_lang` | `string` | `"eng"` | Manual source language code (used when auto-detect is off) |
@@ -306,7 +309,7 @@ Configuration is stored as JSON at `~/.local/share/tman/config.json` (Linux). Th
 | `history_save` | `bool` | `true` | Save translations to SQLite history |
 | `history_max_records` | `u32` | `1000` | Maximum history records (oldest pruned) |
 | **Application** | | | |
-| `app_log_level` | `string` | `"info"` | Log verbosity: `"bilgi"` (info), `"hata"` (error), `"hata_ayiklama"` (debug) |
+| `app_log_level` | `string` | `"info"` | Log verbosity: `"info"`, `"error"`, `"debug"` |
 | `app_lang` | `string` | `"en"` | UI language: `en`, `tr`, `de`, `es`, `ru`, `ja`, `zh` |
 
 ---
