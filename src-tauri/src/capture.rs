@@ -44,6 +44,8 @@ pub fn capture_region(cfg: &AppConfig) -> Result<(DynamicImage, DynamicImage, St
 
     log::debug!("Capturing screen region '{}' via grim...", region);
     let grim_output = Command::new("grim")
+        .arg("-t")
+        .arg("ppm")
         .arg("-g")
         .arg(&region)
         .arg("-") // write to stdout
@@ -61,7 +63,7 @@ pub fn capture_region(cfg: &AppConfig) -> Result<(DynamicImage, DynamicImage, St
 
     log::debug!("Grim output: {} bytes", grim_output.stdout.len());
 
-    let original_image = image::load_from_memory_with_format(&grim_output.stdout, ImageFormat::Png)
+    let original_image = image::load_from_memory_with_format(&grim_output.stdout, ImageFormat::Pnm)
         .map_err(|e| {
             log::error!("Failed to decode captured image: {}", e);
             format!("Failed to parse image: {}", e)

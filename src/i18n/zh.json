@@ -31,7 +31,8 @@
   "preprocessing": {
     "title": "图像预处理",
     "grayscale": "灰度化",
-    "grayscale_desc": "将图像转为黑白以提高 OCR 识别准确率。",    "contrast": "对比度增强",
+    "grayscale_desc": "将图像转为黑白以提高 OCR 识别准确率。",
+    "contrast": "对比度增强",
     "contrast_off": "关闭",
     "contrast_light": "轻度",
     "contrast_strong": "重度",
@@ -79,9 +80,7 @@
     "deepl_title": "DEEPL 设置",
     "deepl_key": "API 密钥",
     "google_title": "GOOGLE 翻译设置",
-    "google_key": "API 密钥 (选填)",
-    "libre_title": "LIBRETRANSLATE 设置",
-    "libre_url": "服务器 URL"
+    "google_key": "API 密钥 (选填)"
   },
   "server": {
     "title": "本地 Web 服务器",

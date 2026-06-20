@@ -18,7 +18,7 @@ Tman is a high-performance screen translation application purpose-built for Wayl
 
 - **Wayland-native capture** — Uses `grim` + `slurp` for precise, compositor-integrated screen region selection.
 - **Sub-100 ms native OCR** — Powered by [`oar-ocr`](https://github.com/greatv/oar-ocr) with PaddleOCR v5 ONNX models loaded once into memory. No Python. No sidecars.
-- **Multiple translation providers** — Google Translate (free, no key), OpenAI-compatible APIs (GPT-4o-mini, etc.), DeepL, and LibreTranslate.
+- **Multiple translation providers** — Google Translate (free, no key), OpenAI-compatible APIs (GPT-4o-mini, etc.), and DeepL.
 - **Mobile Link & Web UI** — Scan a QR code to view real-time translations on your phone or tablet via an embedded Axum WebSocket server and a glassmorphic web interface.
 - **Smart caching** — SQLite-backed translation cache prevents redundant API calls; full offline history with export (JSON, CSV, TXT).
 - **Multilingual interface** — UI fully localized in 7 languages: English, Turkish, German, Spanish, Russian, Japanese, and Simplified Chinese.
@@ -210,7 +210,7 @@ Tman/
 │   │   ├── main.rs               # Binary entry point
 │   │   ├── capture.rs            # grim/slurp integration + image preprocessing
 │   │   ├── ocr.rs                # oar-ocr engine (lazy-init, memory-resident)
-│   │   ├── translate.rs          # Google, OpenAI, DeepL, LibreTranslate adapters
+│   │   ├── translate.rs          # Google, OpenAI, DeepL adapters
 │   │   ├── db.rs                 # SQLite schema, history CRUD, translation cache
 │   │   ├── server.rs             # Axum HTTP + WebSocket server
 │   │   ├── broadcaster.rs        # tokio::broadcast event bus
@@ -243,7 +243,7 @@ Tman/
 5. **OCR** → Preprocessed image passed to `oar-ocr` (PaddleOCR v5 ONNX models, resident in memory). Extracts text in ~50 ms.
 6. **Language detection** → `whichlang` identifies source language from extracted text.
 7. **Cache check** → SQLite lookup for identical `(original_text, target_lang)` pair. If hit, skip API call.
-8. **Translation** → On cache miss, dispatches to selected provider (Google/OpenAI/DeepL/LibreTranslate).
+8. **Translation** → On cache miss, dispatches to selected provider (Google/OpenAI/DeepL).
 9. **History save** → New translations inserted into SQLite; old records pruned to `history_max_records`.
 10. **Broadcast** → `TranslationEvent` sent via `tokio::broadcast` to both:
     - Tauri frontend (via `app.emit("translation-update", ...)`) — without image payloads for performance.
@@ -294,12 +294,12 @@ Configuration is stored as JSON at `~/.local/share/tman/config.json` (Linux). Th
 | `ocr_merge_paragraphs` | `bool` | `false` | Collapse double spaces after line merge |
 | `ocr_min_chars` | `u32` | `1` | Minimum character count to accept OCR result |
 | **Translation** | | | |
-| `trans_provider` | `string` | `"google"` | Provider: `"google"`, `"openai"`, `"deepl"`, `"libre"` |
+| `trans_provider` | `string` | `"google"` | Provider: `"google"`, `"openai"`, `"deepl"` |
 | `trans_target_lang` | `string` | `"tr"` | Target language code (ISO 639-1) |
 | `trans_cache_enabled` | `bool` | `true` | Enable SQLite translation cache |
 | `trans_openai_endpoint` | `string` | `"https://api.openai.com/v1/chat/completions"` | OpenAI-compatible API endpoint |
 | `trans_openai_model` | `string` | `"gpt-4o-mini"` | Model name for OpenAI provider |
-| `trans_libre_url` | `string` | `"http://localhost:5000/translate"` | LibreTranslate API endpoint |
+
 | **History** | | | |
 | `history_save` | `bool` | `true` | Save translations to SQLite history |
 | `history_max_records` | `u32` | `1000` | Maximum history records (oldest pruned) |
@@ -404,11 +404,6 @@ Tman includes an embedded Axum web server that serves a glassmorphic remote tran
 
 - Requires an API key (stored in OS keyring as `deepl_key`).
 - Automatically detects free vs. pro API by checking if key ends with `:fx`.
-
-### LibreTranslate
-
-- Self-hosted option. No API key needed by default.
-- Configure the endpoint via `trans_libre_url` (default: `http://localhost:5000/translate`).
 
 ---
 

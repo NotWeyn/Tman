@@ -23,7 +23,6 @@ pub async fn translate_text(
     let result = match cfg.trans_provider.as_str() {
         "openai" => translate_openai(text, source_lang, cfg, client).await,
         "deepl" => translate_deepl(text, source_lang, cfg, client).await,
-        "libre" => translate_libre(text, source_lang, cfg, client).await,
         _ => translate_google(text, source_lang, cfg, client).await,
     };
 
@@ -209,55 +208,3 @@ async fn translate_deepl(
     Err("Invalid DeepL response".to_string())
 }
 
-async fn translate_libre(
-    text: &str,
-    source_lang: &str,
-    cfg: &AppConfig,
-    client: &reqwest::Client,
-) -> Result<String, String> {
-    let sl = if source_lang == "auto" {
-        "auto"
-    } else {
-        source_lang
-    };
-
-    log::debug!(
-        "LibreTranslate request — url={}, source={}",
-        cfg.trans_libre_url,
-        sl
-    );
-
-    let body = json!({
-        "q": text,
-        "source": sl,
-        "target": cfg.trans_target_lang,
-        "format": "text"
-    });
-
-    let res = client
-        .post(&cfg.trans_libre_url)
-        .json(&body)
-        .send()
-        .await
-        .map_err(|e| {
-            log::error!("LibreTranslate network error: {}", e);
-            e.to_string()
-        })?;
-
-    if !res.status().is_success() {
-        log::error!("LibreTranslate API error — HTTP {}", res.status());
-        return Err(format!("LibreTranslate API error: {}", res.status()));
-    }
-
-    let res_json: serde_json::Value = res.json().await.map_err(|e| {
-        log::error!("LibreTranslate response parse error: {}", e);
-        e.to_string()
-    })?;
-
-    if let Some(translated) = res_json.get("translatedText").and_then(|t| t.as_str()) {
-        Ok(translated.to_string())
-    } else {
-        log::error!("LibreTranslate returned unexpected JSON: {}", res_json);
-        Err("Invalid LibreTranslate response".to_string())
-    }
-}

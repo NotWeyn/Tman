@@ -31,7 +31,8 @@
   "preprocessing": {
     "title": "GÖRÜNTÜ ÖN İŞLEME",
     "grayscale": "Gri tonlama (Grayscale)",
-    "grayscale_desc": "Görüntüyü siyah-beyaza çevirerek OCR doğruluğunu artırır.",    "contrast": "Kontrast artırma",
+    "grayscale_desc": "Görüntüyü siyah-beyaza çevirerek OCR doğruluğunu artırır.",
+    "contrast": "Kontrast artırma",
     "contrast_off": "Kapalı",
     "contrast_light": "Hafif",
     "contrast_strong": "Güçlü",
@@ -79,9 +80,7 @@
     "deepl_title": "DEEPL AYARLARI",
     "deepl_key": "API anahtarı",
     "google_title": "GOOGLE TRANSLATE AYARLARI",
-    "google_key": "API anahtarı (Opsiyonel)",
-    "libre_title": "LIBRETRANSLATE AYARLARI",
-    "libre_url": "Sunucu URL'i"
+    "google_key": "API anahtarı (Opsiyonel)"
   },
   "server": {
     "title": "Yerel web sunucu",

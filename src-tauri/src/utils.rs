@@ -35,11 +35,20 @@ pub fn generate_qr_base64(data: &str) -> Result<String, String> {
     Ok(format!("data:image/png;base64,{}", b64))
 }
 pub fn dynamic_image_to_base64(image: &image::DynamicImage) -> Result<String, String> {
+    let max_dim = 800;
+    let (width, height) = (image.width(), image.height());
+    
+    let resized = if width > max_dim || height > max_dim {
+        image.resize(max_dim, max_dim, image::imageops::FilterType::Triangle)
+    } else {
+        image.clone()
+    };
+
     let mut bytes: Vec<u8> = Vec::new();
     let mut cursor = std::io::Cursor::new(&mut bytes);
 
     // Convert to RGB8 to ensure it can be encoded as JPEG (JPEG does not support alpha)
-    let rgb_image = image.to_rgb8();
+    let rgb_image = resized.to_rgb8();
     image::DynamicImage::ImageRgb8(rgb_image)
         .write_to(&mut cursor, image::ImageFormat::Jpeg)
         .map_err(|e| e.to_string())?;

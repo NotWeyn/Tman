@@ -109,7 +109,7 @@ async fn capture_and_translate(
             {
                 translated_text = cached;
                 from_cache = true;
-                log::debug!(
+                log::info!(
                     "Cache HIT — \"{}...\" → {}",
                     &original_text.chars().take(40).collect::<String>(),
                     target_lang
@@ -309,6 +309,7 @@ async fn save_config(
     state: State<'_, Arc<AppState>>,
 ) -> Result<(), String> {
     config::save_config(&new_config);
+    crate::logging::set_log_level(&new_config.app_log_level);
     *state.config.lock().await = new_config;
     Ok(())
 }

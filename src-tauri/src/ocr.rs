@@ -62,8 +62,13 @@ fn extract_text_oar(image: &DynamicImage) -> Result<String, String> {
     use oar_ocr::oarocr::OAROCRBuilder;
     use oar_ocr::utils::load_image;
 
-    // Save image to temp file (oar-ocr's load_image reads from disk)
-    let temp_path = std::env::temp_dir().join("tman_oar_capture.bmp");
+    let shm_dir = std::path::Path::new("/dev/shm");
+    let temp_dir = if shm_dir.exists() && shm_dir.is_dir() {
+        shm_dir.to_path_buf()
+    } else {
+        std::env::temp_dir()
+    };
+    let temp_path = temp_dir.join("tman_oar_capture.bmp");
     image
         .save_with_format(&temp_path, image::ImageFormat::Bmp)
         .map_err(|e| {

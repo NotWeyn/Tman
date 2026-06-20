@@ -31,7 +31,6 @@ pub struct AppConfig {
     pub trans_cache_enabled: bool,
     pub trans_openai_endpoint: String,
     pub trans_openai_model: String,
-    pub trans_libre_url: String,
 
     pub history_save: bool,
     pub history_max_records: u32,
@@ -68,7 +67,6 @@ impl Default for AppConfig {
             trans_cache_enabled: true,
             trans_openai_endpoint: "https://api.openai.com/v1/chat/completions".to_string(),
             trans_openai_model: "gpt-4o-mini".to_string(),
-            trans_libre_url: "http://localhost:5000/translate".to_string(),
 
             history_save: true,
             history_max_records: 1000,

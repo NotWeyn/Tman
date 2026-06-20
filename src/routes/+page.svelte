@@ -81,7 +81,6 @@
   let openaiModel = '';
   let deeplKey = '';
   let googleKey = '';
-  let libreUrl = '';
 
   // 4. Mobil Sunucu
   let serverActive = false;
@@ -137,7 +136,6 @@
       cacheTranslations = config.trans_cache_enabled;
       openaiEndpoint = config.trans_openai_endpoint;
       openaiModel = config.trans_openai_model;
-      libreUrl = config.trans_libre_url;
       
       serverActive = config.server_enabled;
       serverPort = config.server_port;
@@ -219,7 +217,6 @@
           trans_cache_enabled: cacheTranslations,
           trans_openai_endpoint: openaiEndpoint,
           trans_openai_model: openaiModel,
-          trans_libre_url: libreUrl,
           
           history_save: saveHistory,
           history_max_records: Number(maxHistory),
@@ -241,7 +238,7 @@
       captureMode, intervalSeconds, changeThreshold, lastRegion,
       grayscale, contrast, scale,
       sourceLang, autoDetectLang, mergeLines, mergeParagraphs, minCharThreshold,
-      activeProvider, targetLang, cacheTranslations, openaiEndpoint, openaiModel, libreUrl, openaiKey, deeplKey, googleKey,
+      activeProvider, targetLang, cacheTranslations, openaiEndpoint, openaiModel, openaiKey, deeplKey, googleKey,
       serverActive, serverPort, serverAutoStart, serverLocalOnly,
       saveHistory, maxHistory,
       logLevel, appLang
@@ -540,7 +537,6 @@
                 <option value="openai">OpenAI-compatible</option>
                 <option value="google">Google Translate</option>
                 <option value="deepl">DeepL</option>
-                <option value="libre">LibreTranslate (Local)</option>
               </select>
             </div>
 
@@ -598,16 +594,6 @@
             <div class="row full-col">
               <label>{$t('provider.google_key')}</label>
               <input type="password" bind:value={googleKey} placeholder="Key..." class="form-input" />
-            </div>
-          </section>
-          {/if}
-
-          {#if activeProvider === 'libre'}
-          <section class="section">
-            <h3 class="section-title">{$t('provider.libre_title')}</h3>
-            <div class="row full-col">
-              <label>{$t('provider.libre_url')}</label>
-              <input type="text" bind:value={libreUrl} placeholder="http://localhost:5000" class="form-input" />
             </div>
           </section>
           {/if}

@@ -31,7 +31,8 @@
   "preprocessing": {
     "title": "画像前処理",
     "grayscale": "グレースケール",
-    "grayscale_desc": "画像を白黒に変換してOCRの精度を高めます。",    "contrast": "コントラスト強調",
+    "grayscale_desc": "画像を白黒に変換してOCRの精度を高めます。",
+    "contrast": "コントラスト強調",
     "contrast_off": "オフ",
     "contrast_light": "弱",
     "contrast_strong": "強",
@@ -79,9 +80,7 @@
     "deepl_title": "DEEPL設定",
     "deepl_key": "APIキー",
     "google_title": "GOOGLE翻訳設定",
-    "google_key": "APIキー (任意)",
-    "libre_title": "LIBRETRANSLATE設定",
-    "libre_url": "サーバーURL"
+    "google_key": "APIキー (任意)"
   },
   "server": {
     "title": "ローカルWebサーバー",

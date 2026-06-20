@@ -31,7 +31,8 @@
   "preprocessing": {
     "title": "PREPROCESAMIENTO DE IMAGEN",
     "grayscale": "Escala de grises",
-    "grayscale_desc": "Convierte la imagen a blanco y negro para mejorar la precisión del OCR.",    "contrast": "Mejora de contraste",
+    "grayscale_desc": "Convierte la imagen a blanco y negro para mejorar la precisión del OCR.",
+    "contrast": "Mejora de contraste",
     "contrast_off": "Desactivado",
     "contrast_light": "Ligero",
     "contrast_strong": "Fuerte",
@@ -79,9 +80,7 @@
     "deepl_title": "CONFIGURACIÓN DE DEEPL",
     "deepl_key": "Clave API",
     "google_title": "CONFIGURACIÓN DE GOOGLE TRANSLATE",
-    "google_key": "Clave API (Opcional)",
-    "libre_title": "CONFIGURACIÓN DE LIBRETRANSLATE",
-    "libre_url": "URL del servidor"
+    "google_key": "Clave API (Opcional)"
   },
   "server": {
     "title": "Servidor web local",

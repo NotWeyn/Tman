@@ -31,7 +31,8 @@
   "preprocessing": {
     "title": "ПРЕДОБРАБОТКА ИЗОБРАЖЕНИЯ",
     "grayscale": "Оттенки серого",
-    "grayscale_desc": "Преобразует изображение в черно-белое для повышения точности OCR.",    "contrast": "Улучшение контраста",
+    "grayscale_desc": "Преобразует изображение в черно-белое для повышения точности OCR.",
+    "contrast": "Улучшение контраста",
     "contrast_off": "Выкл",
     "contrast_light": "Легкий",
     "contrast_strong": "Сильный",
@@ -79,9 +80,7 @@
     "deepl_title": "НАСТРОЙКИ DEEPL",
     "deepl_key": "Ключ API",
     "google_title": "НАСТРОЙКИ GOOGLE TRANSLATE",
-    "google_key": "Ключ API (Необязательно)",
-    "libre_title": "НАСТРОЙКИ LIBRETRANSLATE",
-    "libre_url": "URL сервера"
+    "google_key": "Ключ API (Необязательно)"
   },
   "server": {
     "title": "Локальный веб-сервер",

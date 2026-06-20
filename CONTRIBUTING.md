@@ -256,7 +256,7 @@ async fn translate_xxx(text, source_lang, cfg, client) -> Result<String, String>
 | Google Translate | `translate_google` | None required | Uses free `translate.googleapis.com` endpoint |
 | OpenAI-compatible | `translate_openai` | Keyring: `openai_key` | Configurable endpoint + model |
 | DeepL | `translate_deepl` | Keyring: `deepl_key` | Auto-detects free vs. pro by key suffix `:fx` |
-| LibreTranslate | `translate_libre` | None required | Self-hosted, configurable URL |
+
 
 `translate_text()` dispatches to the correct adapter based on `cfg.trans_provider`.
 
@@ -409,7 +409,7 @@ Add the match arm to `translate_text()`:
 match cfg.trans_provider.as_str() {
     "openai" => translate_openai(text, source_lang, cfg, client).await,
     "deepl" => translate_deepl(text, source_lang, cfg, client).await,
-    "libre" => translate_libre(text, source_lang, cfg, client).await,
+
     "mytranslate" => translate_mytranslate(text, source_lang, cfg, client).await,  // ← NEW
     _ => translate_google(text, source_lang, cfg, client).await,
 }
@@ -424,7 +424,7 @@ Add the option to the provider dropdown:
   <option value="openai">OpenAI-compatible</option>
   <option value="google">Google Translate</option>
   <option value="deepl">DeepL</option>
-  <option value="libre">LibreTranslate (Local)</option>
+
   <option value="mytranslate">MyTranslate</option>   <!-- NEW -->
 </select>
 ```
