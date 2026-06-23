@@ -172,23 +172,14 @@ pub struct AppState {
 
 These are non-negotiable. PRs that violate these will be rejected.
 
-### 1. No Python. No Sidecars. No External Processes (for OCR).
-
-Tman previously used Python-based OCR sidecars (PaddleOCR, EasyOCR, RapidOCR). These caused:
-- 2+ second delays per capture
-- Uncontrolled process spawning
-- Python runtime dependency hell
-
-**All OCR MUST use the native Rust `oar-ocr` engine.** It runs in-memory, stays resident, and processes captures in ~50 ms.
-
-### 2. Wayland First
+### 1. Wayland First
 
 Screen capture uses `grim` and `slurp`. Do **NOT** add X11-specific code (like `xdotool`, `xwininfo`, `XFixes`) unless:
 - It is cleanly separated behind a feature flag or runtime check.
 - It does not break Wayland functionality.
 - You have a clear use case.
 
-### 3. Never Block the Main Thread
+### 2. Never Block the Main Thread
 
 The backend uses `tokio`. During startup:
 - Config loading is sync (~1 ms, acceptable).
@@ -196,7 +187,7 @@ The backend uses `tokio`. During startup:
 
 Do NOT use `tauri::async_runtime::block_on()` or `std::thread::sleep()` on the setup thread.
 
-### 4. Glassmorphic Design Language
+### 3. Glassmorphic Design Language
 
 The UI uses a consistent dark-mode, glassmorphic aesthetic:
 - Dark backgrounds (`#1a1a1e`, `#131316`)
@@ -207,7 +198,7 @@ The UI uses a consistent dark-mode, glassmorphic aesthetic:
 
 New UI elements **must match** this design system. Reference `src/app.css` for the design tokens.
 
-### 5. Every User-Facing String Must Be Localized
+### 4. Every User-Facing String Must Be Localized
 
 The app supports 7 languages. Any text visible to the user must go through the i18n system — never hardcode strings in Svelte templates.
 
