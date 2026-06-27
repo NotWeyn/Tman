@@ -207,4 +207,3 @@ async fn translate_deepl(
     log::error!("DeepL returned unexpected JSON structure: {}", res_json);
     Err("Invalid DeepL response".to_string())
 }
-

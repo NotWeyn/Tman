@@ -37,7 +37,7 @@ pub struct AppConfig {
 
     pub app_log_level: String,
     pub app_lang: String,
-    
+
     pub ui_auto_copy: bool,
     pub ui_sound_capture: bool,
     pub ui_sound_complete: bool,

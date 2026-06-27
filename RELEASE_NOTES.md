@@ -1,15 +1,18 @@
 # Release Notes - v0.3.0
 
-## 🚀 Enhancements & Features
-- **Consistent UI Components**: Replaced all native `<select>` dropdown menus with a custom-designed, consistent `CustomSelect` component across the application (Language, Active Provider, Capture Mode, Scale, Contrast, Export Format, etc.).
-- **Smart Dropdown Positioning**: Implemented dynamic bounds checking for custom dropdown menus (including `LanguagePicker`). Dropdowns will now automatically adjust their position to ensure they never overflow outside the window boundaries.
+## What's New
 
-## 🛠 Refactoring & Technical Debt
-- **Frontend Architecture**: Completely modularized the monolithic UI (`+page.svelte`) by extracting settings into separate, maintainable Tab components (e.g., `CaptureTab`, `TranslateTab`, `HistoryTab`, etc.).
-- **State Management**: Centralized all UI state using Svelte writable stores in `stores.ts` for cleaner data flow and reactivity.
-- **Backend Architecture**: Refactored the God-object `capture_and_translate` function in `src-tauri/src/lib.rs`. Extracted complex orchestration into focused helper methods (`do_capture`, `do_ocr`, `do_translate`, `do_broadcast`), greatly improving code readability and maintainability.
-- **Code Cleanup**: Removed unnecessary `unwrap()` calls in OCR bindings and fixed various unused variable warnings to ensure robust compilation.
+### 🏗️ Major Architectural Refactoring
+- **Frontend Modularization**: Refactored the monolithic `+page.svelte` application shell into a clean, modular tab-based structure. All UI sections are now separated into independent components (`AppTab`, `CaptureTab`, `OcrTab`, `TranslateTab`, `OptionsTab`, `HistoryTab`, `ServerTab`), dramatically improving code maintainability.
+- **Centralized State Management**: Implemented a unified Svelte store (`src/lib/stores.ts`) to handle all application state. This eliminates prop-drilling, ensures consistent reactivity, and guarantees synchronization between the UI and the Tauri backend.
+- **Backend Pipeline Refactor**: Extracted the monolithic God-function `capture_and_translate` in `src-tauri/src/lib.rs` into discrete, async pipeline stages (`do_capture`, `do_ocr`, `do_translate`, `do_broadcast`). This improves the readability and testability of the core application logic.
 
-## 🐛 Bug Fixes
-- Addressed accessibility (`a11y`) warnings in UI components.
-- Fixed translation cache lookup issues.
+### ✨ UI & UX Improvements
+- **Custom Select Menus**: Upgraded all native `<select>` dropdowns across the application to a new, unified `CustomSelect` component. This brings visual consistency to the interface, matching the premium look of the Language Picker.
+- **Smart Window Bounds**: Expandable menus (like the Language Picker and the new Custom Select) now intelligently calculate their position. If opening a dropdown would cause it to overflow outside the application window, it dynamically shifts to stay visible while remaining anchored to its parent button.
+- **Accessibility**: Resolved several `a11y` warnings by ensuring all form elements have associated labels and descriptive text.
+
+### 🐛 Bug Fixes & Code Quality
+- Removed unsafe `.unwrap()` calls in `ocr.rs` and replaced them with robust Rust error handling.
+- Fixed Rust compilation warnings regarding unused variables in the translation pipeline.
+- Enforced strict Rust formatting (`cargo fmt`) across the entire Tauri backend.

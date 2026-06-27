@@ -54,8 +54,7 @@ pub fn init_logging(config_level: &str) {
     let level = parse_level(config_level);
     LOG_LEVEL.store(level as usize, Ordering::Relaxed);
 
-    let result = log::set_logger(&LOGGER)
-        .map(|()| log::set_max_level(LevelFilter::Trace));
+    let result = log::set_logger(&LOGGER).map(|()| log::set_max_level(LevelFilter::Trace));
 
     if let Err(e) = result {
         eprintln!("[tman] Logger already initialized or failed: {}", e);

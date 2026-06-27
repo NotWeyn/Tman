@@ -58,24 +58,37 @@ async fn capture_and_translate(
 
     // 1. Capture Phase
     let t0 = std::time::Instant::now();
-    let (_original_image, processed_image, region, b64_task) = do_capture(&app, &state, &cfg).await?;
+    let (_original_image, processed_image, region, b64_task) =
+        do_capture(&app, &state, &cfg).await?;
     let capture_ms = t0.elapsed().as_millis();
 
     // 2. OCR Phase
     let t1 = std::time::Instant::now();
-    let (original_text, detected_lang, _skipped_ocr) = do_ocr(&state, &processed_image, &cfg).await?;
+    let (original_text, detected_lang, _skipped_ocr) =
+        do_ocr(&state, &processed_image, &cfg).await?;
     let ocr_ms = t1.elapsed().as_millis();
 
     // 3. Translation Phase
     let t2 = std::time::Instant::now();
-    let (translated_text, from_cache, is_change) = do_translate(&state, &cfg, &original_text, &detected_lang).await?;
+    let (translated_text, from_cache, is_change) =
+        do_translate(&state, &cfg, &original_text, &detected_lang).await?;
     if !is_change {
         return Ok("No significant text change".to_string());
     }
     let translate_ms = t2.elapsed().as_millis();
 
     // 4. Broadcast Phase
-    do_broadcast(&app, &state, &cfg, &original_text, &detected_lang, &translated_text, region, b64_task).await?;
+    do_broadcast(
+        &app,
+        &state,
+        &cfg,
+        &original_text,
+        &detected_lang,
+        &translated_text,
+        region,
+        b64_task,
+    )
+    .await?;
 
     let total_ms = pipeline_start.elapsed().as_millis();
     log::debug!(
@@ -99,9 +112,22 @@ async fn do_capture(
     app: &tauri::AppHandle,
     state: &AppState,
     cfg: &crate::config::AppConfig,
-) -> Result<(image::DynamicImage, image::DynamicImage, String, tokio::task::JoinHandle<(Option<String>, Option<String>)>), String> {
+) -> Result<
+    (
+        image::DynamicImage,
+        image::DynamicImage,
+        String,
+        tokio::task::JoinHandle<(Option<String>, Option<String>)>,
+    ),
+    String,
+> {
     let (original_image, processed_image, region) = capture::capture_region(cfg)?;
-    log::debug!("Screen captured — region='{}', image={}x{}", region, original_image.width(), original_image.height());
+    log::debug!(
+        "Screen captured — region='{}', image={}x{}",
+        region,
+        original_image.width(),
+        original_image.height()
+    );
 
     use tauri::Emitter;
     let _ = app.emit("capture-done", ());
@@ -149,7 +175,10 @@ async fn do_ocr(
                     original_text = res.0.clone();
                     detected_lang = res.1.clone();
                     skip_ocr = true;
-                    log::debug!("Image identical to last capture (hash {}), skipping OCR!", current_hash);
+                    log::debug!(
+                        "Image identical to last capture (hash {}), skipping OCR!",
+                        current_hash
+                    );
                 }
             }
         }
@@ -159,12 +188,16 @@ async fn do_ocr(
         let (txt, lang) = ocr::extract_text(processed_image, cfg)?;
         original_text = txt;
         detected_lang = lang;
-        
+
         *state.last_image_hash.lock().await = Some(current_hash);
         *state.last_ocr_result.lock().await = Some((original_text.clone(), detected_lang.clone()));
     }
 
-    log::debug!("OCR extracted — detected_lang='{}', text_len={} chars", detected_lang, original_text.len());
+    log::debug!(
+        "OCR extracted — detected_lang='{}', text_len={} chars",
+        detected_lang,
+        original_text.len()
+    );
     Ok((original_text, detected_lang, skip_ocr))
 }
 
@@ -180,17 +213,25 @@ async fn do_translate(
 
     if cfg.trans_cache_enabled {
         if let Ok(pool) = get_db(state).await {
-            if let Ok(Some(cached)) = db::get_cached_translation(&pool, original_text, &target_lang).await {
+            if let Ok(Some(cached)) =
+                db::get_cached_translation(&pool, original_text, &target_lang).await
+            {
                 translated_text = cached;
                 from_cache = true;
-                log::info!("Cache HIT — \"{}...\" → {}", &original_text.chars().take(40).collect::<String>(), target_lang);
+                log::info!(
+                    "Cache HIT — \"{}...\" → {}",
+                    &original_text.chars().take(40).collect::<String>(),
+                    target_lang
+                );
             }
         }
     }
 
     if !from_cache {
         log::debug!("Calling translation provider '{}' ...", cfg.trans_provider);
-        translated_text = translate::translate_text(original_text, detected_lang, cfg, &state.http_client).await?;
+        translated_text =
+            translate::translate_text(original_text, detected_lang, cfg, &state.http_client)
+                .await?;
         log::debug!("Translation received — {} chars", translated_text.len());
     }
 
@@ -206,7 +247,14 @@ async fn do_translate(
 
     if !from_cache && cfg.history_save {
         if let Ok(pool) = get_db(state).await {
-            let _ = db::insert_history(&pool, original_text, &translated_text, &target_lang, cfg.history_max_records).await;
+            let _ = db::insert_history(
+                &pool,
+                original_text,
+                &translated_text,
+                &target_lang,
+                cfg.history_max_records,
+            )
+            .await;
         }
     }
 
@@ -355,10 +403,7 @@ async fn get_custom_sound(
 }
 
 #[tauri::command]
-async fn reset_custom_sound(
-    sound_type: String,
-    app: tauri::AppHandle,
-) -> Result<(), String> {
+async fn reset_custom_sound(sound_type: String, app: tauri::AppHandle) -> Result<(), String> {
     let data_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
     let target_path = data_dir.join(format!("custom_{}.mp3", sound_type));
     if target_path.exists() {

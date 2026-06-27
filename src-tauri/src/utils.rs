@@ -37,7 +37,7 @@ pub fn generate_qr_base64(data: &str) -> Result<String, String> {
 pub fn dynamic_image_to_base64(image: &image::DynamicImage) -> Result<String, String> {
     let max_dim = 800;
     let (width, height) = (image.width(), image.height());
-    
+
     let resized = if width > max_dim || height > max_dim {
         image.resize(max_dim, max_dim, image::imageops::FilterType::Triangle)
     } else {

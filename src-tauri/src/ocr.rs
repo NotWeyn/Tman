@@ -98,7 +98,9 @@ fn extract_text_oar(image: &DynamicImage) -> Result<String, String> {
         log::info!("OCR engine initialized successfully");
     }
 
-    let ocr = guard.as_ref().ok_or_else(|| "OCR engine not initialized".to_string())?;
+    let ocr = guard
+        .as_ref()
+        .ok_or_else(|| "OCR engine not initialized".to_string())?;
 
     let oar_image = load_image(&temp_path).map_err(|e| {
         log::error!("Failed to load image for OCR processing: {}", e);
