@@ -48,8 +48,6 @@ async fn capture_and_translate(
     let pipeline_start = std::time::Instant::now();
     log::info!("──── Translation pipeline started ────");
 
-    // 1. Capture Region + Preprocessing
-    let t0 = std::time::Instant::now();
     let cfg = state.config.lock().await.clone();
     log::debug!(
         "Config loaded — provider={}, target_lang={}, cache={}",
@@ -58,190 +56,27 @@ async fn capture_and_translate(
         cfg.trans_cache_enabled
     );
 
-    let (original_image, processed_image, region) = capture::capture_region(&cfg)?;
-    log::debug!(
-        "Screen captured — region='{}', image={}x{}",
-        region,
-        original_image.width(),
-        original_image.height()
-    );
-
-    use tauri::Emitter;
-    let _ = app.emit("capture-done", ());
-
-    if cfg.capture_last_region != region {
-        let mut cfg_mut = state.config.lock().await;
-        cfg_mut.capture_last_region = region.clone();
-        crate::config::save_config(&cfg_mut);
-        log::debug!("Region changed, saved to config");
-    }
-
-    // Encode images for Web UI concurrently in the background
-    let orig_clone = original_image.clone();
-    let proc_clone = processed_image.clone();
-    let b64_task = tokio::task::spawn_blocking(move || {
-        let cap = crate::utils::dynamic_image_to_base64(&orig_clone).ok();
-        let proc = crate::utils::dynamic_image_to_base64(&proc_clone).ok();
-        (cap, proc)
-    });
-
+    // 1. Capture Phase
+    let t0 = std::time::Instant::now();
+    let (_original_image, processed_image, region, b64_task) = do_capture(&app, &state, &cfg).await?;
     let capture_ms = t0.elapsed().as_millis();
-    log::debug!("Capture phase completed in {}ms", capture_ms);
 
-    // 2. OCR (with Image Hashing to skip OCR if image is identical)
+    // 2. OCR Phase
     let t1 = std::time::Instant::now();
-    let mut original_text = String::new();
-    let mut detected_lang = String::new();
-    let mut skip_ocr = false;
-
-    // Hash the processed image
-    let current_hash = {
-        use std::hash::{Hash, Hasher};
-        let mut hasher = std::collections::hash_map::DefaultHasher::new();
-        processed_image.as_bytes().hash(&mut hasher);
-        hasher.finish()
-    };
-
-    // Check if hash matches previous capture
-    {
-        let last_hash_lock = state.last_image_hash.lock().await;
-        if let Some(last_h) = *last_hash_lock {
-            if last_h == current_hash {
-                let last_res_lock = state.last_ocr_result.lock().await;
-                if let Some(res) = &*last_res_lock {
-                    original_text = res.0.clone();
-                    detected_lang = res.1.clone();
-                    skip_ocr = true;
-                    log::debug!("Image identical to last capture (hash {}), skipping OCR! (0ms)", current_hash);
-                }
-            }
-        }
-    }
-
-    if !skip_ocr {
-        let (txt, lang) = ocr::extract_text(&processed_image, &cfg)?;
-        original_text = txt;
-        detected_lang = lang;
-        
-        // Save to state for next time
-        *state.last_image_hash.lock().await = Some(current_hash);
-        *state.last_ocr_result.lock().await = Some((original_text.clone(), detected_lang.clone()));
-    }
-
+    let (original_text, detected_lang, _skipped_ocr) = do_ocr(&state, &processed_image, &cfg).await?;
     let ocr_ms = t1.elapsed().as_millis();
-    log::debug!(
-        "OCR phase completed in {}ms — detected_lang='{}', text_len={} chars\n  text_preview=\"{}\"",
-        ocr_ms,
-        detected_lang,
-        original_text.len(),
-        &original_text.chars().take(80).collect::<String>()
-    );
 
-    // 3. Translation
+    // 3. Translation Phase
     let t2 = std::time::Instant::now();
-    let target_lang = cfg.trans_target_lang.clone();
-
-    let mut translated_text = String::new();
-    let mut from_cache = false;
-
-    if cfg.trans_cache_enabled {
-        if let Ok(pool) = get_db(&state).await {
-            if let Ok(Some(cached)) =
-                db::get_cached_translation(&pool, &original_text, &target_lang).await
-            {
-                translated_text = cached;
-                from_cache = true;
-                log::info!(
-                    "Cache HIT — \"{}...\" → {}",
-                    &original_text.chars().take(40).collect::<String>(),
-                    target_lang
-                );
-            }
-        } else {
-            log::error!("Cache lookup failed — DB not ready yet");
-        }
+    let (translated_text, from_cache, is_change) = do_translate(&state, &cfg, &original_text, &detected_lang).await?;
+    if !is_change {
+        return Ok("No significant text change".to_string());
     }
-
-    if !from_cache {
-        if cfg.trans_cache_enabled {
-            log::debug!(
-                "Cache MISS — \"{}...\" → {}",
-                &original_text.chars().take(40).collect::<String>(),
-                target_lang
-            );
-        }
-        log::debug!("Calling translation provider '{}' ...", cfg.trans_provider);
-        translated_text =
-            translate::translate_text(&original_text, &detected_lang, &cfg, &state.http_client)
-                .await?;
-        log::debug!("Translation received — {} chars", translated_text.len());
-    }
-
-    // In change-detection mode, compare translated text with previous translation
-    if cfg.capture_mode == "change" {
-        let mut last_text_lock = state.last_text.lock().await;
-        if let Some(last_txt) = last_text_lock.as_ref() {
-            if last_txt == &translated_text {
-                return Ok("No significant text change".to_string());
-            }
-        }
-        *last_text_lock = Some(translated_text.clone());
-    }
-
-    // Save to history (only if not from cache and not skipped by change-detection)
-    if !from_cache && cfg.history_save {
-        if let Ok(pool) = get_db(&state).await {
-            match db::insert_history(
-                &pool,
-                &original_text,
-                &translated_text,
-                &target_lang,
-                cfg.history_max_records,
-            )
-            .await
-            {
-                Ok(_) => log::debug!("History saved successfully"),
-                Err(e) => log::error!("Failed to save history: {}", e),
-            }
-        } else {
-            log::error!("Cannot save history — DB not initialized");
-        }
-    }
-
-    // 4. Broadcast to Web UI — debounce: skip if identical to last broadcast
-    let should_broadcast = {
-        let mut last_bc = state.last_broadcast.lock().await;
-        if last_bc.as_deref() == Some(&translated_text) {
-            false
-        } else {
-            *last_bc = Some(translated_text.clone());
-            true
-        }
-    };
-
-    if should_broadcast {
-        let (captured_b64, processed_b64) = b64_task.await.unwrap_or((None, None));
-
-        let event = broadcaster::TranslationEvent {
-            original_text: original_text.clone(),
-            translated_text: translated_text.clone(),
-            source_lang: detected_lang,
-            target_lang: target_lang.clone(),
-            region: region.clone(),
-            captured_image: captured_b64,
-            processed_image: processed_b64,
-        };
-        let _ = state.broadcaster.send(event.clone());
-
-        // 5. Emit to Tauri frontend (Lightweight event WITHOUT images)
-        use tauri::Emitter;
-        let mut tauri_event = event.clone();
-        tauri_event.captured_image = None;
-        tauri_event.processed_image = None;
-        let _ = app.emit("translation-update", tauri_event);
-    }
-
     let translate_ms = t2.elapsed().as_millis();
+
+    // 4. Broadcast Phase
+    do_broadcast(&app, &state, &cfg, &original_text, &detected_lang, &translated_text, region, b64_task).await?;
+
     let total_ms = pipeline_start.elapsed().as_millis();
     log::debug!(
         "──── Pipeline Performance ────\n\
@@ -258,6 +93,167 @@ async fn capture_and_translate(
     log::info!("──── Translation completed in {}ms ────", total_ms);
 
     Ok(translated_text)
+}
+
+async fn do_capture(
+    app: &tauri::AppHandle,
+    state: &AppState,
+    cfg: &crate::config::AppConfig,
+) -> Result<(image::DynamicImage, image::DynamicImage, String, tokio::task::JoinHandle<(Option<String>, Option<String>)>), String> {
+    let (original_image, processed_image, region) = capture::capture_region(cfg)?;
+    log::debug!("Screen captured — region='{}', image={}x{}", region, original_image.width(), original_image.height());
+
+    use tauri::Emitter;
+    let _ = app.emit("capture-done", ());
+
+    if cfg.capture_last_region != region {
+        let mut cfg_mut = state.config.lock().await;
+        cfg_mut.capture_last_region = region.clone();
+        crate::config::save_config(&cfg_mut);
+        log::debug!("Region changed, saved to config");
+    }
+
+    let orig_clone = original_image.clone();
+    let proc_clone = processed_image.clone();
+    let b64_task = tokio::task::spawn_blocking(move || {
+        let cap = crate::utils::dynamic_image_to_base64(&orig_clone).ok();
+        let proc = crate::utils::dynamic_image_to_base64(&proc_clone).ok();
+        (cap, proc)
+    });
+
+    Ok((original_image, processed_image, region, b64_task))
+}
+
+async fn do_ocr(
+    state: &AppState,
+    processed_image: &image::DynamicImage,
+    cfg: &crate::config::AppConfig,
+) -> Result<(String, String, bool), String> {
+    let mut original_text = String::new();
+    let mut detected_lang = String::new();
+    let mut skip_ocr = false;
+
+    let current_hash = {
+        use std::hash::{Hash, Hasher};
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        processed_image.as_bytes().hash(&mut hasher);
+        hasher.finish()
+    };
+
+    {
+        let last_hash_lock = state.last_image_hash.lock().await;
+        if let Some(last_h) = *last_hash_lock {
+            if last_h == current_hash {
+                let last_res_lock = state.last_ocr_result.lock().await;
+                if let Some(res) = &*last_res_lock {
+                    original_text = res.0.clone();
+                    detected_lang = res.1.clone();
+                    skip_ocr = true;
+                    log::debug!("Image identical to last capture (hash {}), skipping OCR!", current_hash);
+                }
+            }
+        }
+    }
+
+    if !skip_ocr {
+        let (txt, lang) = ocr::extract_text(processed_image, cfg)?;
+        original_text = txt;
+        detected_lang = lang;
+        
+        *state.last_image_hash.lock().await = Some(current_hash);
+        *state.last_ocr_result.lock().await = Some((original_text.clone(), detected_lang.clone()));
+    }
+
+    log::debug!("OCR extracted — detected_lang='{}', text_len={} chars", detected_lang, original_text.len());
+    Ok((original_text, detected_lang, skip_ocr))
+}
+
+async fn do_translate(
+    state: &AppState,
+    cfg: &crate::config::AppConfig,
+    original_text: &str,
+    detected_lang: &str,
+) -> Result<(String, bool, bool), String> {
+    let target_lang = cfg.trans_target_lang.clone();
+    let mut translated_text = String::new();
+    let mut from_cache = false;
+
+    if cfg.trans_cache_enabled {
+        if let Ok(pool) = get_db(state).await {
+            if let Ok(Some(cached)) = db::get_cached_translation(&pool, original_text, &target_lang).await {
+                translated_text = cached;
+                from_cache = true;
+                log::info!("Cache HIT — \"{}...\" → {}", &original_text.chars().take(40).collect::<String>(), target_lang);
+            }
+        }
+    }
+
+    if !from_cache {
+        log::debug!("Calling translation provider '{}' ...", cfg.trans_provider);
+        translated_text = translate::translate_text(original_text, detected_lang, cfg, &state.http_client).await?;
+        log::debug!("Translation received — {} chars", translated_text.len());
+    }
+
+    if cfg.capture_mode == "change" {
+        let mut last_text_lock = state.last_text.lock().await;
+        if let Some(last_txt) = last_text_lock.as_ref() {
+            if last_txt == &translated_text {
+                return Ok((translated_text, from_cache, false));
+            }
+        }
+        *last_text_lock = Some(translated_text.clone());
+    }
+
+    if !from_cache && cfg.history_save {
+        if let Ok(pool) = get_db(state).await {
+            let _ = db::insert_history(&pool, original_text, &translated_text, &target_lang, cfg.history_max_records).await;
+        }
+    }
+
+    Ok((translated_text, from_cache, true))
+}
+
+async fn do_broadcast(
+    app: &tauri::AppHandle,
+    state: &AppState,
+    cfg: &crate::config::AppConfig,
+    original_text: &str,
+    detected_lang: &str,
+    translated_text: &str,
+    region: String,
+    b64_task: tokio::task::JoinHandle<(Option<String>, Option<String>)>,
+) -> Result<(), String> {
+    let should_broadcast = {
+        let mut last_bc = state.last_broadcast.lock().await;
+        if last_bc.as_deref() == Some(translated_text) {
+            false
+        } else {
+            *last_bc = Some(translated_text.to_string());
+            true
+        }
+    };
+
+    if should_broadcast {
+        let (captured_b64, processed_b64) = b64_task.await.unwrap_or((None, None));
+
+        let event = broadcaster::TranslationEvent {
+            original_text: original_text.to_string(),
+            translated_text: translated_text.to_string(),
+            source_lang: detected_lang.to_string(),
+            target_lang: cfg.trans_target_lang.clone(),
+            region,
+            captured_image: captured_b64,
+            processed_image: processed_b64,
+        };
+        let _ = state.broadcaster.send(event.clone());
+
+        use tauri::Emitter;
+        let mut tauri_event = event.clone();
+        tauri_event.captured_image = None;
+        tauri_event.processed_image = None;
+        let _ = app.emit("translation-update", tauri_event);
+    }
+    Ok(())
 }
 
 #[tauri::command]

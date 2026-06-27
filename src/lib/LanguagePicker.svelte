@@ -1,6 +1,6 @@
 <script lang="ts">
   import { languages, targetLanguages, getFlag } from '$lib/languages';
-  import { createEventDispatcher } from 'svelte';
+  import { createEventDispatcher, tick } from 'svelte';
   import { t } from '$lib/i18n';
 
   export let value: string = '';
@@ -12,6 +12,8 @@
   let isOpen = false;
   let search = '';
   let container: HTMLElement | null = null;
+  let dropdownEl: HTMLElement | null = null;
+  let dropdownStyle = 'left: 0; right: auto;';
 
   $: langList = showAuto ? languages : targetLanguages;
   
@@ -37,10 +39,40 @@
     dispatch('change', code);
   }
 
-  function toggle() {
+  function adjustPosition() {
+    if (!container || !dropdownEl) return;
+    const rect = container.getBoundingClientRect();
+    const dropdownRect = dropdownEl.getBoundingClientRect();
+    const windowWidth = window.innerWidth;
+    
+    let leftOffset = 0;
+    
+    if (rect.left + dropdownRect.width > windowWidth) {
+      let overflow = (rect.left + dropdownRect.width) - windowWidth;
+      leftOffset = -(overflow + 10);
+      
+      const maxShiftLeft = rect.width - dropdownRect.width;
+      if (leftOffset < maxShiftLeft) {
+        leftOffset = maxShiftLeft;
+      }
+    }
+    
+    if (rect.left + leftOffset < 0) {
+      leftOffset = -rect.left + 10;
+      if (leftOffset > 0) {
+        leftOffset = 0;
+      }
+    }
+    
+    dropdownStyle = `left: ${leftOffset}px; right: auto;`;
+  }
+
+  async function toggle() {
     isOpen = !isOpen;
     if (isOpen) {
       search = '';
+      await tick();
+      adjustPosition();
       // Focus search input after DOM update
       setTimeout(() => {
         const input = container?.querySelector('.lp-search') as HTMLElement | null;
@@ -64,7 +96,7 @@
   }
 </script>
 
-<svelte:window on:click={handleClickOutside} on:keydown={handleKeydown} />
+<svelte:window on:click={handleClickOutside} on:keydown={handleKeydown} on:resize={isOpen ? adjustPosition : undefined} />
 
 <div class="lang-picker" bind:this={container}>
   <button class="lp-trigger" on:click={toggle} type="button" title={label}>
@@ -74,7 +106,7 @@
   </button>
 
   {#if isOpen}
-    <div class="lp-dropdown">
+    <div class="lp-dropdown" style={dropdownStyle} bind:this={dropdownEl}>
       <input
         type="text"
         class="lp-search"
@@ -154,7 +186,6 @@
   .lp-dropdown {
     position: absolute;
     top: calc(100% + 4px);
-    left: 0;
     z-index: 100;
     min-width: 240px;
     max-height: 320px;
