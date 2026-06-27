@@ -218,11 +218,7 @@ async fn do_translate(
             {
                 translated_text = cached;
                 from_cache = true;
-                log::info!(
-                    "Cache HIT — \"{}...\" → {}",
-                    &original_text.chars().take(40).collect::<String>(),
-                    target_lang
-                );
+                log::info!("Cache HIT");
             }
         }
     }
