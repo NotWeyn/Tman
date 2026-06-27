@@ -31,7 +31,7 @@ whichlang = "0.1"
 sqlx = { version = "0.8", features = ["sqlite", "runtime-tokio", "tls-rustls"] }
 qrcode = "0.14"
 dirs = "5.0"
-tower-http = { version = "0.6.10", features = ["fs", "cors"] }
+tower-http = { version = "0.7.0", features = ["fs", "cors"] }
 futures-util = "0.3.32"
 base64 = "0.22.1"
 urlencoding = "2"
