@@ -261,6 +261,7 @@ async fn do_translate(
     Ok((translated_text, from_cache, true))
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn do_broadcast(
     app: &tauri::AppHandle,
     state: &AppState,
@@ -355,8 +356,8 @@ async fn export_history_to_file(
         }
     } else if format == "Anki" {
         for r in history {
-            let orig = r.original_text.replace('\t', " ").replace('\n', " ");
-            let trans = r.translated_text.replace('\t', " ").replace('\n', " ");
+            let orig = r.original_text.replace(['\t', '\n'], " ");
+            let trans = r.translated_text.replace(['\t', '\n'], " ");
             data_str.push_str(&format!("{}\t{}\n", orig, trans));
         }
     } else {
