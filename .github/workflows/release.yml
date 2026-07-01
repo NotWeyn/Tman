@@ -42,15 +42,22 @@ jobs:
           TAG_NAME: ${{ github.ref_name }}
         run: |
           python3 -c "
-          import os, json, sys
+          import os, json, sys, subprocess
           from datetime import datetime
           tag_name = os.environ.get('TAG_NAME', '')
           # Strip leading 'v' to get raw SemVer for Tauri client
           version_semver = tag_name.lstrip('v')
           
+          try:
+              prev_tag = subprocess.check_output(['git', 'describe', '--tags', '--abbrev=0', f'{tag_name}^'], stderr=subprocess.DEVNULL).decode('utf-8').strip()
+              commits = subprocess.check_output(['git', 'log', f'{prev_tag}..{tag_name}', '--pretty=format:- %s'], stderr=subprocess.DEVNULL).decode('utf-8')
+              release_notes = f'Release {tag_name}\n\nChanges:\n{commits}'
+          except Exception:
+              release_notes = f'Tman {tag_name} release'
+          
           latest_json = {
               'version': version_semver,
-              'notes': f'Tman {tag_name} ',
+              'notes': release_notes,
               'pub_date': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
               'platforms': {
                   'linux-x86_64': {
@@ -72,7 +79,7 @@ jobs:
         run: |
           gh release create "${{ github.ref_name }}" \
             --title "Tman ${{ github.ref_name }}" \
-            --notes "Tman ${{ github.ref_name }} " \
+            --generate-notes \
             --draft=false \
             --prerelease=false \
             latest.json
