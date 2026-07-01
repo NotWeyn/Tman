@@ -28,7 +28,7 @@ axum = { version = "0.7", features = ["ws"] }
 reqwest = { version = "0.12", features = ["json"] }
 image = "0.25"
 whichlang = "0.1"
-sqlx = { version = "0.8", features = ["sqlite", "runtime-tokio", "tls-rustls"] }
+sqlx = { version = "0.9", features = ["sqlite", "runtime-tokio", "tls-rustls"] }
 qrcode = "0.14"
 dirs = "5.0"
 tower-http = { version = "0.6.10", features = ["fs", "cors"] }
