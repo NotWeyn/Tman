@@ -30,15 +30,12 @@ history.db
 Thumbs.db
 
 # AI assistant
-memory-bank/
 AGENTS.md
 .agents/
 
-# .graphifyignore
-node_modules/
-dist/
-*.generated.py
-graphify-out/
-
 todo.md
+
+
+
+
 

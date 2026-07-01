@@ -1,4 +1,5 @@
 use std::sync::OnceLock;
+use tracing::{Event, Subscriber};
 use tracing_subscriber::{
     filter::LevelFilter,
     fmt::{self, format::Writer, FmtContext, FormatEvent, FormatFields},
@@ -6,7 +7,6 @@ use tracing_subscriber::{
     registry::LookupSpan,
     reload, EnvFilter, Registry,
 };
-use tracing::{Event, Subscriber};
 
 type ReloadHandle = reload::Handle<EnvFilter, Registry>;
 static RELOAD_HANDLE: OnceLock<ReloadHandle> = OnceLock::new();
@@ -25,7 +25,7 @@ where
         event: &Event<'_>,
     ) -> std::fmt::Result {
         let meta = event.metadata();
-        
+
         let level = *meta.level();
         let colored_level = match level {
             tracing::Level::ERROR => "\x1b[38;2;255;69;0mERROR\x1b[0m",
@@ -34,18 +34,18 @@ where
             tracing::Level::DEBUG => "\x1b[38;2;50;205;50mDEBUG\x1b[0m",
             tracing::Level::TRACE => "\x1b[38;2;112;128;144mTRACE\x1b[0m",
         };
-        
+
         let target = meta.target();
         let display_target = if target.starts_with("tman_lib") {
             target.strip_prefix("tman_lib::").unwrap_or("tman")
         } else {
             target
         };
-        
+
         write!(writer, "[{} {}] ", colored_level, display_target)?;
-        
+
         ctx.field_format().format_fields(writer.by_ref(), event)?;
-        
+
         writeln!(writer)
     }
 }
@@ -60,7 +60,7 @@ fn parse_level(level: &str) -> LevelFilter {
 
 pub fn init_logging(config_level: &str) {
     let level = parse_level(config_level);
-    
+
     // Create base filter for tman and tman_lib crates
     let filter = EnvFilter::builder()
         .with_default_directive(level.into())
@@ -88,7 +88,7 @@ pub fn set_log_level(config_level: &str) {
         let new_filter = EnvFilter::builder()
             .with_default_directive(level.into())
             .parse_lossy(format!("tman={},tman_lib={}", level, level));
-        
+
         if let Err(e) = handle.modify(|filter| *filter = new_filter) {
             eprintln!("[tman] Failed to reload log level: {}", e);
         } else {
