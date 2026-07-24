@@ -279,7 +279,12 @@ async fn do_broadcast(
     };
 
     if should_broadcast {
-        let (captured_b64, processed_b64) = b64_task.await.unwrap_or((None, None));
+        let (captured_b64, processed_b64) = if state.broadcaster.tx.receiver_count() > 0 {
+            b64_task.await.unwrap_or((None, None))
+        } else {
+            b64_task.abort();
+            (None, None)
+        };
 
         let event = broadcaster::TranslationEvent {
             original_text: original_text.to_string(),

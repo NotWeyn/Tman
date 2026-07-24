@@ -68,6 +68,13 @@ fn extract_text_oar(image: &DynamicImage) -> Result<String, String> {
     } else {
         std::env::temp_dir()
     };
+    struct TempFileGuard<'a>(&'a std::path::Path);
+    impl<'a> Drop for TempFileGuard<'a> {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_file(self.0);
+        }
+    }
+
     let temp_path = temp_dir.join("tman_oar_capture.bmp");
     image
         .save_with_format(&temp_path, image::ImageFormat::Bmp)
@@ -75,6 +82,7 @@ fn extract_text_oar(image: &DynamicImage) -> Result<String, String> {
             log::error!("Failed to save temp image for OCR: {}", e);
             format!("Failed to save temp image: {}", e)
         })?;
+    let _clean_guard = TempFileGuard(&temp_path);
 
     let mut guard = OAR_ENGINE.lock().map_err(|e| {
         log::error!("OCR engine lock poisoned: {}", e);
