@@ -469,7 +469,7 @@ mkdir -p ~/.oar
 
 ### Database locked / not ready
 
-**Error:** `Veritabanı henüz hazır değil, lütfen birkaç saniye bekleyin.`
+**Error:** `The database is not ready yet, please wait a few seconds.`
 
 **Cause:** Database initializes asynchronously on startup. This error occurs if you trigger a capture before the DB is ready.
 
