@@ -1,6 +1,6 @@
 [package]
 name = "tman"
-version = "1.0.0"
+version = "1.1.0"
 description = "Tman - Screen Translator"
 authors = ["you"]
 edition = "2021"
@@ -42,6 +42,9 @@ log = "0.4"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "ansi"] }
 tauri-plugin-dialog = "2.7.1"
+wayland-client = "0.31"
+wayland-protocols-wlr = { version = "0.3", features = ["client"] }
+wayland-protocols = { version = "0.32", features = ["client"] }
 
 [profile.release]
 opt-level = 3
