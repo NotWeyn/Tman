@@ -1,6 +1,6 @@
 [package]
 name = "tman"
-version = "0.3.2"
+version = "1.0.0"
 description = "Tman - Screen Translator"
 authors = ["you"]
 edition = "2021"
