@@ -354,7 +354,11 @@ pub fn capture_region(cfg: &AppConfig) -> Result<(DynamicImage, DynamicImage, St
 
             if !grim_output.status.success() {
                 let stderr = String::from_utf8_lossy(&grim_output.stderr);
-                log::error!("Grim capture failed: {} (wlr-screencopy error: {})", stderr, e);
+                log::error!(
+                    "Grim capture failed: {} (wlr-screencopy error: {})",
+                    stderr,
+                    e
+                );
                 return Err("Grim failed to capture region".to_string());
             }
 
