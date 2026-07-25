@@ -44,27 +44,26 @@
     const rect = container.getBoundingClientRect();
     const dropdownRect = dropdownEl.getBoundingClientRect();
     const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+    const margin = 8;
     
-    let leftOffset = 0;
+    // Ideal position: centered relative to the trigger button
+    const triggerCenter = rect.left + (rect.width / 2);
+    const idealLeft = triggerCenter - (dropdownRect.width / 2);
     
-    if (rect.left + dropdownRect.width > windowWidth) {
-      let overflow = (rect.left + dropdownRect.width) - windowWidth;
-      leftOffset = -(overflow + 10);
-      
-      const maxShiftLeft = rect.width - dropdownRect.width;
-      if (leftOffset < maxShiftLeft) {
-        leftOffset = maxShiftLeft;
-      }
+    // Clamp position within viewport boundaries
+    const minLeft = margin;
+    const maxLeft = Math.max(margin, windowWidth - dropdownRect.width - margin);
+    const constrainedLeft = Math.max(minLeft, Math.min(idealLeft, maxLeft));
+    
+    const leftOffset = constrainedLeft - rect.left;
+    
+    let topStyle = 'top: calc(100% + 4px); bottom: auto;';
+    if (rect.bottom + dropdownRect.height > windowHeight && rect.top > dropdownRect.height) {
+      topStyle = 'bottom: calc(100% + 4px); top: auto;';
     }
     
-    if (rect.left + leftOffset < 0) {
-      leftOffset = -rect.left + 10;
-      if (leftOffset > 0) {
-        leftOffset = 0;
-      }
-    }
-    
-    dropdownStyle = `left: ${leftOffset}px; right: auto;`;
+    dropdownStyle = `left: ${leftOffset}px; right: auto; ${topStyle}`;
   }
 
   async function toggle() {

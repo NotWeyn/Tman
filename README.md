@@ -16,11 +16,11 @@ Tman is a high-performance screen translation application purpose-built for Wayl
 
 ## ✨ Key Features
 
-- **Wayland-native capture** — Uses `grim` + `slurp` for precise, compositor-integrated screen region selection.
-- **Native OCR** — Powered by [`oar-ocr`](https://github.com/greatv/oar-ocr) with PaddleOCR v5 ONNX models loaded once into memory. No Python. No sidecars.
+- **Wayland-native capture** — Built for Wayland compositors (Hyprland, Sway, etc.) with `wayland-client` & `wlr-screencopy` native protocol support alongside `grim` + `slurp`.
+- **Native OCR** — Powered by [`oar-ocr`](https://github.com/greatv/oar-ocr) with PaddleOCR v5 ONNX models loaded once into memory with zero-disk temp file leaking. No Python. No sidecars.
 - **Multiple translation providers** — Google Translate (free, no key), OpenAI-compatible APIs (GPT-4o-mini, etc.), and DeepL.
 - **Mobile Link & Web UI** — Scan a QR code to view real-time translations on your phone or tablet via an embedded Axum WebSocket server and a glassmorphic web interface.
-- **Smart caching** — SQLite-backed translation cache prevents redundant API calls; full offline history with export (JSON, CSV, TXT).
+- **High-throughput caching** — SQLite-backed translation cache with WAL (Write-Ahead Logging) mode to prevent locks; full offline history with export (JSON, CSV, TXT, Anki).
 - **Multilingual interface** — UI fully localized in 7 languages: English, Turkish, German, Spanish, Russian, Japanese, and Simplified Chinese.
 - **Secure API key storage** — Keys stored in OS keyring via `keyring-rs` (GNOME Keyring, KDE Wallet, etc.), never in plaintext config files.
 - **Image preprocessing pipeline** — Configurable Lanczos3 upscaling, grayscale conversion, contrast adjustment, and binarization before OCR.
@@ -62,7 +62,7 @@ Tman is a high-performance screen translation application purpose-built for Wayl
 | **Language Detection** | [`whichlang`](https://crates.io/crates/whichlang) |
 | **QR Code Generation** | [`qrcode`](https://crates.io/crates/qrcode) |
 | **Secret Storage** | [`keyring`](https://crates.io/crates/keyring) (OS keyring integration) |
-| **Screen Capture** | `grim` + `slurp` (Wayland utilities) |
+| **Screen Capture** | Wayland native protocols (`wayland-client`, `wlr-screencopy`) & `grim` + `slurp` |
 | **Build System** | Vite 6 (frontend) + Cargo (backend) |
 
 ---

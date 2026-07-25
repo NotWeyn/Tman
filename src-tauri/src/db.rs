@@ -22,9 +22,7 @@ pub async fn init_db(db_url: &str) -> Result<SqlitePool, String> {
             format!("Failed to connect to db: {}", e)
         })?;
 
-    let _ = sqlx::query("PRAGMA journal_mode=WAL;")
-        .execute(&pool)
-        .await;
+    let _ = sqlx::query("PRAGMA journal_mode=WAL;").execute(&pool).await;
     let _ = sqlx::query("PRAGMA synchronous=NORMAL;")
         .execute(&pool)
         .await;
